@@ -1,0 +1,36 @@
+Database should be based on objects with attributes, without any schema
+
+In place of a schema each application contains a JavaScript function
+or object that verifies objects before they are stored in the
+database.
+
+Objects are identified by a global id or (and?) a path
+
+Each object has revision information and there may be several versions
+of an object. Each time an object is updated a new version is created
+
+Attribute should support all JavaScript types
+
+Attributes should also support file data (or perhaps an object can be
+a file). In that case there is a way to access the object from within
+the application. For example, if an attribute contains an image file,
+it is possible to reach that image file using the src attribute in a
+img tag. It is also possible to upload a file to a object attribute
+using form post.
+
+An object has a parent object. It is possible to find an object by
+listing a parent object's child objects
+
+Objects can be connected objects using relationships. Relationships
+are two way. Perhaps they also have a type and attributes?
+
+There is an automatic author/owner/creator relationship
+
+The database supports pagination, including support for traversing
+trees.
+
+The parent object is needed to create a new object. It is only
+possible to create a new object if you have the latest revision of the
+parent object
+
+A transaction object is always used to update the database

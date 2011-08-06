@@ -1,0 +1,65 @@
+Database API 0.2:
+
+db.get( callback, path|id|object, attribute-spec )
+
+Returns an object with the requested attributes. The callback will be
+called every time the object is changed, until the close method is
+called. The callback method will be called with the same object as
+argument.
+
+Attribute-spec:
+
+An object with members such as:
+
+u_read: 1	// user read
+[name]: 1	// mandatory attribute
+[name]?: 1	// attribute that may be null
+
+->(modifier): attribute-spec    // child object(s)
+<-: attribute-spec	// parent object
+->[name](modifier): attribute-spec	  // outgoing relationship
+<-[name](modifier): attribute-spec	  // incoming relationship
+
+modifiers:
+(none)	Mandatory, only one object
+?	Optional, max one
+*	Zero or more. Will be returned as an array
++	One or more. Will be returned as an array
+
+
+db.list( callback, parent path|id|object, relationship, search-query, attribute-spec,
+         window-size, window-start, extra-condition )
+
+Returns a list object that contains a window into the total result
+set. The object contains methods for moving along the result set, as
+well as the size of the result set.
+
+Relationship is ->, <-, ->[name] or <-[name]
+
+search-query is a simple query language. Perhaps only == among
+attributes and u_read.
+
+extra-condition is another search expression, that is used to select
+among the results from the search-query. The selected window will
+always contain an object that fulfills the extra-condition. For
+example, "u_read == 0" in an extra-condition will return a window
+containing the first unread object in the result set. The list object
+will contain methods for both moving to the next/previous window and
+for moving to the next/previous window containg any object with the
+extra-condition. The list object will contain a counter of both total
+objects as well as the number of objects that fulfill the
+extra-condition.
+
+
+
+
+Forum 0.1:
+
+db.subscribe( callback, query );	// query == 'messages', 'users'
+  callback( message { 'id' : id, 'user' : id, 'text' : text, 'date' : date } )
+  callback( user { 'id' : id, 'status' : 'online'|'offline', 'name' : name } )
+  return true to continue subscription, false to cancel
+
+db.put( callback, message );  		// message == { 'text' : '' }
+
+

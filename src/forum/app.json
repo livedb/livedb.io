@@ -1,0 +1,15 @@
+{
+	"dependencies":
+	[
+		"jquery-1.6.2.min",
+		"forum"
+	],
+	"stylesheets":
+	[
+		"css/forum.css"
+	],
+	"db":
+	[
+		"/messages"
+	]
+}
