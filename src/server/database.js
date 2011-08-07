@@ -1,5 +1,3 @@
-//var io = require('socket.io');
-//var sqlite = require('sqlite');
 var fs = require('fs');
 var assert = require('assert');
 var lowLevelDb = require( './LowLevelDb' );
@@ -21,8 +19,6 @@ DatabaseManager = function (server, dbPath)
     
     this._clientMethods =
     {
-        // 'subscribe':   this._clientSubscribe,
-        // 'unsubscribe': this._clientUnsubscribe,
         'login':       this._clientLogin,
 	'logout':      this._clientLogout,
         'transaction': this._clientTransaction,
@@ -151,41 +147,8 @@ DatabaseManager.prototype =
 	    this._createList( message.parent, message.relationship, message.searchQuery,
 	    		      message.attributeSpec, message.windowSize, message.windowStart,
 	    		      message.extraCondition, message.orderColumns, clientId, inner );
-
-	    // this._sendList( client, message.parent, message.relationship, message.searchQuery,
-	    // 		    message.attributeSpec, message.windowSize, message.windowStart,
-	    // 		    message.extraCondition, message.orderColumns, sid );
         }
     },
-
-    // _sendList: function (client, parent, relationship, searchQuery,
-    // 			 attributeSpec, windowSize, windowStart,
-    // 			 extraCondition, orderColumns, sid)
-    // {
-    // 	var self = this;
-
-    // 	var innerSend = function (error, list)
-    // 	{
-    // 	    if (error)
-    // 	    {
-    // 		console.log( error );
-    // 		throw error;
-    // 	    }
-    // 	    this._execList( list, function (error, res) {
-    // 		var packet = self._createPacket( sid, { list:list, properties:properties } );
-    // 		client.json.send( packet );
-    // 	    } );
-    // 	};
-
-
-    // 	// this._getList( parent, relationship, searchQuery,
-    // 	// 	       attributeSpec, windowSize, windowStart,
-    // 	// 	       extraCondition, orderColumns,
-    // 	// 	       this._getClientId( client ), function (error, list, properties){
-    // 	// 		   var packet = self._createPacket( sid, { list:list, properties:properties } );
-    // 	// 		   client.json.send( packet );
-    // 	// 	       } );
-    // },
 
     _clientMoveList: function (client, message)
     {
@@ -290,27 +253,6 @@ DatabaseManager.prototype =
 		if (!tryFindWithinCache( forward ? 0 : list.count - 1, forward ))
 		{
 		    self._listGetFirstSelectedNode( list, forward, innerSelectAndMove );
-		    // var conn = this._db.connection();
-		    // var query = forward ? list.selectFirstExtraNodeQuery : list.selectLastExtraNodeQuery;
-		    // conn.start( false );
-		    // query.bind( 'parent', list.parentId );
-		    // conn.query( query.sql, query.parameters );
-		    // conn.go( function (error, rows) {
-		    // 	if (error)
-		    // 	{
-		    // 	    callback( error );
-		    // 	    return;
-		    // 	}
-		    // 	conn.close();
-		    // 	if (rows[0].length == 0)
-		    // 	{
-		    // 	    // Found no matching nodes whatsoever
-		    // 	}
-		    // 	else
-		    // 	{
-		    // 	    innerMove( rows[0][0].id );
-		    // 	}
-		    // } );
 		}
 	    }
 
@@ -318,19 +260,6 @@ DatabaseManager.prototype =
 		if (!tryFindWithinCache( list.selectedIndex + ( forward ? 1 : -1 ), forward ))
 		{
 		    self._listGetNextSelectedNode( list, forward, innerSelectAndMove );
-		    // 	if (error)
-		    // 	    throw error;
-		    // 	if (index !== null)
-		    // 	{
-		    // 	    list.selectedIndex = index;
-		    // 	    list.selectedId = id;
-		    // 	    innerMove( Math.max( 0, index - ( list.windowSize >> 1 ) ) );
-		    // 	}
-		    // 	else
-		    // 	{
-		    // 	    // There are no more selected nodes in this direction
-		    // 	}
-		    // } );
 		}
 	    };
 
@@ -375,41 +304,6 @@ DatabaseManager.prototype =
             delete lists[ sid ];
         }
     },
-    
-    // _clientSubscribe: function (client, message)
-    // {
-    //     if (( 'id' in message ) &&
-    //         ( 'query' in message ) &&
-    //         ( message.query in { 'messages': 1, 'users': 1 } ))
-    //     {
-    //         var sid = message.id;
-    //         subscriptions = this._subscriptions[ client.id] ;
-    //         subscriptions[sid] = message.query;
-    //         this._subscriptions[ client.id ] = subscriptions;
-    //         if (message.query == 'messages')
-    //         {
-    //             this._sendAllMessages(client, sid);
-    //         }
-    //         else
-    //         {
-    //             this._sendAllUsers(client, sid);
-    //         }
-    //     }
-    // },
-    
-    // _clientUnsubscribe: function (client, message)
-    // {
-    //     if ( 'id' in message )
-    //     {
-    //         var subscriberId = message.id;
-    //         var subscriptions = this._subscriptions[ client.id ];
-    //         if ( message.id in subscriptions )
-    //         {
-    //             delete subscriptions[message.id];
-    //         }
-    //         this._subscriptions[ client.id ] = subscriptions;
-    //     }
-    // },
     
     _clientLogin: function (client, message)
     {
@@ -472,29 +366,6 @@ DatabaseManager.prototype =
 	}
     },
     
-    // _saveMessage: function (userId, text, callback)
-    // {
-    //     var sql = "INSERT INTO posts (user_id, text, date) VALUES (?, ?, DATETIME('NOW'))";
-    //     var options = { 'lastInsertRowID': true };
-    //     var self = this;
-        
-    //     this._db.prepare(sql, options, function (error, statement){
-    //         if (error) throw error;
-    //         statement.bindArray([userId, text], function (error){
-    //             if (error) throw error;
-    //             statement.step(function (error, row){
-    //                 if (error) throw error;
-    //                 self._getMessages.call(self, function (messages){
-    //                     callback.call(self, messages[0]);
-    //                 }, this.lastInsertRowID);
-    //                 statement.finalize(function (error){
-    //                     if (error) throw error;
-    //                 });
-    //             });
-    //         });
-    //     });
-    // },
-    
     _setUserOnline: function (userId, isOnline, callback)
     {
 	var self = this;
@@ -522,32 +393,11 @@ DatabaseManager.prototype =
 	} );
     },
     
-    // _sendAllMessages: function (client, sid)
-    // {
-    //     this._getMessages(function (messages){
-    //         var packet = this._createPacket( sid, messages );
-    //         client.json.send( packet );
-    //     });
-    // },
-    
-    // _sendAllUsers: function (client, sid)
-    // {
-    //     this._getUsers( function (users) {
-    //         var packet = this._createPacket( sid, users );
-    //         client.json.send(packet);
-    //     } );
-    // },
-    
     _createPacket: function (sid, data)
     {
         var packet = { id: sid, result: data };
         return packet;
     },
-    
-    // _broadcastMessages: function (messages)
-    // {
-    //     this._broadcast( "messages", messages );
-    // },
     
     _broadcastLogin: function (client)
     {
@@ -559,27 +409,6 @@ DatabaseManager.prototype =
     
     _broadcast: function (type, data)
     {
-        // for (var sessionId in this._socket.clients)
-        // {
-        //     var client = this._socket.clients[sessionId];
-        //     subscriptions = this._subscriptions[client];
-        //     for (var sid in subscriptions)
-        //     {
-        //         if (subscriptions[sid] == type)
-        //         {/*
-        //             // TODO: This is correct, but the client is too dumb right now, do not remove
-        //             client.json.send(this._createPacket( sid, data ));*/
-        //             if (type == "messages")
-        //             {
-        //                 this._sendAllMessages( client, sid );
-        //             }
-        //             else // type = users
-        //             {
-        //                 this._sendAllUsers( client, sid );
-        //             }
-        //         }
-        //     }
-        // }
     },
     
     _getClientId: function (client)
@@ -592,33 +421,6 @@ DatabaseManager.prototype =
         this._clientIds[ client.id ] = userId;
     },
     
-    // _getMessages: function (callback, specificId)
-    // {
-    //     var self = this;
-    // 	var conn = this._db.connection();
-    // 	conn.start( false );
-    //     var resultHandler = function (error, rows)
-    //     {
-    //         if (error) throw error;
-    //         callback.call(self, rows);
-    //     };
-    //     if (specificId != undefined)
-    //     {
-    //         var sql = "SELECT * FROM posts WHERE id=?";
-    // 	    conn.exec( sql, [ specificId ] );
-    // 	    conn.go( resultHandler );
-    //         //this._db.execute( sql, [specificId], resultHandler );
-    //     }
-    //     else
-    //     {
-    //         var sql = "SELECT * FROM posts";
-    // 	    conn.exec( sql );
-    // 	    conn.go( resultHandler );
-    //         //this._db.execute( sql, resultHandler );
-    //     }
-    // 	conn.close();
-    // },
-
     _fastGetList: function (nodeList, attributeSpec, user, properties, callback)
     {
 	if (nodeList.length == 0)
@@ -1006,36 +808,6 @@ DatabaseManager.prototype =
     	    self._getList( '/users', null, null, userAttrs, null, null, null, null, null, resultHandler);
         }
     },
-
-    // _getUsers: function (callback, specificId)
-    // {
-    //     var self = this;
-
-    // 	var userAttrs = {
-    // 	    'name' : 1
-    // 	};
-
-    //     var resultHandler = function (error, users)
-    //     {
-    //         if (error) throw error;
-    //         for (var i in users)
-    //         {
-    //             users[i].status = self._userOnline[ users[i].id ] == 1 ? 'online' : 'offline';
-    //         }
-    //         callback.call(self, users);
-    //     };
-        
-    //     if (specificId != undefined)
-    //     {
-    // 	    self.get( specificId, userAttrs, 0, function (error, user) {
-    // 		resultHandler( error, [ user ] );
-    // 	    } );
-    // 	}
-    //     else
-    //     {
-    // 	    self._getList( '/users', null, null, userAttrs, null, null, null, null, null, resultHandler );
-    //     }
-    // },
 
     _invalidateAllLists: function()
     {
@@ -1556,51 +1328,6 @@ DatabaseManager.prototype =
 
 	/* Main helper functions */
 
-	// var resolveFirstExtraConditionNodeId = function ( ) {
-	//     conn.start( false );
-	//     list.selectFirstExtraNodeQuery.bind( 'parent', list.parentId );
-	//     conn.query( list.selectFirstExtraNodeQuery.sql, list.selectFirstExtraNodeQuery.parameters );
-	//     conn.go( function (error, rows) {
-	// 	if (error)
-	// 	{
-	// 	    callback( error );
-	// 	}
-	// 	else if (rows[0].length == 0)
-	// 	{
-	// 	    conn.close();
-	// 	    innerGet( 0 );
-	// 	}
-	// 	else
-	// 	{
-	// 	    conn.close();
-	// 	    resolveNodeIndex( rows[0][0].id );
-	// 	}
-	//     } );
-	// };
-	// var resolveNodeIndex = function ( id ) {
-	//     self.get( id, list.orderAttrs, user, function (error, res) {
-	// 	if (error)
-	// 	{
-	// 	    callback( error );
-	// 	    return;
-	// 	}
-	// 	conn.start( false );
-	// 	list.resolveNodeIndexQuery.bind( 'parent', list.parentId );
-	// 	conn.query( list.resolveNodeIndexQuery.sql, list.resolveNodeIndexQuery.parameters );
-	// 	conn.go( function (error, rows) {
-	// 	    if (error)
-	// 	    {
-	// 		callback( error );
-	// 		return;
-	// 	    }
-	// 	    list.selectedId = id
-	// 	    list.selectedIndex = rows[0][0].count;
-	// 	    conn.close();
-	// 	    innerGet( Math.max( 0, list.selectedIndex - ( list.windowSize >> 1 ) ) );
-	// 	} );
-	//     } );
-	// };
-
 	var innerGetCenter = function( index ) {
 	    innerGet( Math.max( 0, index - ( list.windowSize >> 1 ) ) );
 	};
@@ -1710,56 +1437,6 @@ DatabaseManager.prototype =
 	} );
     },
     
-//     _getOrCreateUser: function (name, callback)
-//     {
-//         var sql = "SELECT id FROM users WHERE name=?";
-//         var self = this;
-// 	var conn = this._db.connection();
-// 	conn.start();
-
-// 	conn.exec( sql, [ name ] );
-
-// //        db.execute( sql, [name], function (error, rows){
-// 	conn.go( function(error, rows) {
-//             if (error) throw error;
-//             if ( rows.length > 0 )
-//             {
-// 		conn.close();
-
-//                 //callback.call( self, rows[0].id );
-// 		callback( self, rows[0].id );
-//             }
-//             else
-//             {
-//                 sql = "INSERT INTO users (name, online) VALUES (?, ?)";
-// 		conn.insert( sql, [ name, 0 ] );
-
-// 		conn.go( function (error, rows) {
-// 		    if (error) throw error;
-		    
-// 		    callback( self, rows[0] );
-// 		} );
-
-// 		conn.close();
-
-//                // var options = { 'lastInsertRowID': true };
-//                // db.prepare(sql, options, function (error, statement){
-//                //     if (error) throw error;
-//                //     statement.bindArray([name, 0], function (error){
-//                //         if (error) throw error;
-//                //         statement.step(function (error, row){
-//                //             if (error) throw error;
-//                 //             callback.call(self, this.lastInsertRowID); // 'this' is correct here
-//                 //             statement.finalize(function (error){
-//                 //                 if (error) throw error;
-//                 //             });
-//                 //         });
-//                 //     });
-//                 // });
-//             }
-//         });
-//     },
-    
     _openDatabase: function (dbPath)
     {
 	console.log( dbPath );
@@ -1788,16 +1465,9 @@ DatabaseManager.prototype =
 	this._dbPath = dbPath;
         process.chdir( dbPath );
 	db = new lowLevelDb.LowLevelDb( 'sqlite.db' );
-	conn = db.connection();
+	var conn = db.connection();
 	conn.start( false );
 	
-//    db.execute("CREATE TABLE IF NOT EXISTS users ("
-//               + " id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
-//               + " login TEXT NOT NULL,"
-//               + " salt TEXT NOT NULL "
-//               + " password TEXT NOT NULL "
-//               + ")",
-//               Throwerror);
 	conn.exec("CREATE TABLE IF NOT EXISTS node ("
 		+ " id INTEGER NOT NULL,"
 		+ " revision INTEGER NOT NULL,"
@@ -1814,18 +1484,6 @@ DatabaseManager.prototype =
 		+ " name TEXT NOT NULL,"
 		+ " value NOT NULL"
 		+ ")" );
-//	    db.execute("CREATE TABLE IF NOT EXISTS attachment ("
-//		       + " node_id INTEGER NOT NULL,"
-//		       + " node_revision INTEGER NOT NULL,"
-//		       + " attachment_data_id INTEGER NOT NULL"
-//                       + ")",
-//                       throwError);
-//	    db.execute("CREATE TABLE IF NOT EXISTS attachment_data ("
-//                       + " id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
-//		       + " contentType TEXT NOT NULL,"
-//		       + " data BLOB NOT NULL"
-//                       + ")",
-//                       throwError);
 	conn.exec("CREATE TABLE IF NOT EXISTS relationship ("
                 + " from_id INTEGER NOT NULL,"
                 + " to_id INTEGER NOT NULL,"
@@ -1850,46 +1508,6 @@ DatabaseManager.prototype =
 		+ " online BOOLEAN NOT NULL "
 		+ ")" );
 	conn.exec("DELETE FROM user_online");
-//	    db.execute("CREATE TABLE IF NOT EXISTS user_relationship ("
-//		       + " user INTEGER NOT NULL, "
-//		       + " node_id INTEGER NOT NULL, "
-//		       + " name TEXT NOT NULL, "
-//		       + " value NONE NOT NULL, "
-//		       + " timestamp INTEGER NOT NULL "
-//		       + ")", 
-//                            throwError);
-//	    db.execute("CREATE TABLE IF NOT EXISTS user_node ("
-//		       + " user INTEGER NOT NULL,"
-//                            + " id INTEGER NOT NULL,"
-//		       + " status INTEGER NOT NULL,"
-//		       + " timestamp INTEGER NOT NULL,"
-//		       + " parent INTEGER NULL,"
-//		       + " pathelem TEXT NULL "
-//                            + ")",
-//                            throwError);
-//	    db.execute("CREATE TABLE IF NOT EXISTS user_attribute ("
-//		       + " user INTEGER NOT NULL,"
-//                       + " node_id INTEGER NOT NULL,"
-//		       + " name TEXT NOT NULL,"
-//		       + " value TEXT NOT NULL"
-//                            + ")",
-//                            throwError);
-//	    db.execute("CREATE TABLE IF NOT EXISTS user_attachment ("
-//		       + " user INTEGER NOT NULL,"
-//		            + " node_id INTEGER NOT NULL,"
-//		       + " contentType BLOB NOT NULL,"
-//		       + " data BLOB NOT NULL"
-//                            + ")",
-//                            throwError);
-//	    db.execute("CREATE TABLE IF NOT EXISTS user_tx ("
-//		       + "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
-//		       + "timestamp INTEGER NOT NULL, "
-//		       + "data TEXT NOT NULL "
-//                            + ")",
-//                            throwError);
-
-            // Clear all previous statuses
-//            db.execute("UPDATE users SET online=0", throwError);
 
 	conn.close();
 
@@ -1966,7 +1584,7 @@ DatabaseManager.prototype =
 	var self = this;
 
 	console.log( "run transaction" );
-	conn = this._db.connection();
+	var conn = this._db.connection();
 	conn.start( true );
 	if (trans.date)
 	    date = new Date( trans.date );
@@ -1992,6 +1610,7 @@ DatabaseManager.prototype =
 		    if (step.parent != 0 && !newNodes[ step.parent ])
 		    {
 			conn.rollback();
+			console.log( 'no such parent ' + step.parent );
 			callback( new Error() );
 			return;
 		    }
@@ -2056,6 +1675,7 @@ DatabaseManager.prototype =
 		    if (!newNodes[ step.from ])
 		    {
 			conn.rollback();
+			console.log( 'no such from ' + step.from );
 			callback( new Error() );
 			return;
 		    }
@@ -2107,9 +1727,11 @@ DatabaseManager.prototype =
 
 	var checkTransaction = function(error, rows)
 	{
+	    console.log( 'check transaction' );
 	    if (error)
 	    {
 		conn.rollback();
+		console.log( 'check transaction error' );
 		callback( error );
 		return;
 	    }
@@ -2141,6 +1763,7 @@ DatabaseManager.prototype =
 		    if (!isFinite( step.parent ) && nodes[ step.parent.id ] != step.parent.revision)
 		    {
 			conn.rollback();
+			console.log( "error in create" );
 			callback( new Error() );
 			return;
 		    }
@@ -2150,6 +1773,7 @@ DatabaseManager.prototype =
 		    if (nodes[ node.parent.id ] != node.parent.revision)
 		    {
 			conn.rollback();
+			console.log( "error in update or delete" );
 			callback( new Error() );
 			return;
 		    }
@@ -2162,6 +1786,7 @@ DatabaseManager.prototype =
 			   && relationship[ step.from.id + "-" + step.to.id + ":" + step.name ])
 		    {
 			conn.rollback();
+			console.log( "error in add relationship" );
 			callback( new Error() );
 			return;
 		    }
@@ -2173,6 +1798,7 @@ DatabaseManager.prototype =
 			|| !relationship[ step.from.id + "-" + step.to.id + ":" + step.name ])
 		    {
 			conn.rollback();
+			console.log( "error in delete relationship" );
 			callback( new Error() );
 			return;
 		    }
@@ -2182,7 +1808,9 @@ DatabaseManager.prototype =
 	    conn.go( function (error, rows) {
 		if (error)
 		{
+		    console.log( "error in select tx" );
 		    callback( error );
+		    return;
 		}
 		revision = rows[0][0].id;
 		console.log( rows );
@@ -2405,7 +2033,7 @@ DatabaseManager.prototype =
     fastGet: function( id, attr, user, callback )
     {
 	console.log( "fast_get" );
-	conn = this._db.connection();
+	var conn = this._db.connection();
 	conn.start( false );
 	conn.query( "SELECT node.id AS id, revision, user, timestamp, parent "
 		    + "FROM node, tx "
@@ -2782,13 +2410,6 @@ DatabaseManager.prototype =
 
 //	console.log( attrs );
 //	console.log( condParser.formatSqlCondition( cond.root ) );
-
-//	 "SELECT count(*) FROM node WHEER 
-//	 if (relationship)
-//	     ;
-//	 else
-//	     
-//	 "//SELECT count(*) FROM node AS n JOIN relationship AS r ON n.id=r.fromId=? AND r.active=1 AND r.name=
     },
 
     mkdirp: function( path )

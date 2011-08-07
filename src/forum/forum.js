@@ -61,6 +61,7 @@ function onLoad( _liveDb, _rootId )
 function usersCallback( users )
 {
     usersDiv.empty();
+    users = users.items();
     for (var i=0; i < users.length; i++)
     {
         usersDiv.append($('<p></p>').text(users[i].name + ' ('+users[i]._online+')')
@@ -70,11 +71,14 @@ function usersCallback( users )
 
 function messagesCallback( messages )
 {
-  messagesDiv.empty();
-  
-  for (var i=0; i < messages.length; i++)
-      messagesDiv//.append($('<p></p>').text('Posted by '+messages[i].author[0].name+' on '+messages[i].date))
-                 .append($('<p></p>').text(messages[i].text));
+    messagesDiv.empty();
+    messagesDiv.append( $( '<p></p>' ).text( 'Showing ' + messages.offset() + '-'
+					     + (messages.offset() + messages.items().length) + ' of '
+					     + messages.size() + ' messages' ) );
+    messages = messages.items();
+    for (var i=0; i < messages.length; i++)
+	messagesDiv//.append($('<p></p>').text('Posted by '+messages[i].author[0].name+' on '+messages[i].date))
+        .append($('<p></p>').text(messages[i].text));
 }
 
 var messagesObj;

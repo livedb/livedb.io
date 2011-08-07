@@ -118,7 +118,7 @@ List.prototype =
     {
 	this._properties = res.properties;
 	this._list = res.list;
-	this._callback( res.list );
+	this._callback( this );
     },
 
     size: function()
