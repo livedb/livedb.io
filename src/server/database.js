@@ -9,7 +9,7 @@ var fragment = require( './sqlFragment' );
 
 var relationship_limit = 10;
 
-DatabaseManager = function (server, dbPath)
+DatabaseManager = function (server, dbPath, callback)
 {
     this._clientIds = {};
     this._subscriptions = {};
@@ -29,10 +29,14 @@ DatabaseManager = function (server, dbPath)
 	'closeList':   this._clientCloseList,
 	'tree':        this._clientTree,
     };
-    
-    if (server)
-	this._io = this._setupSocket( server );
-    this._openDatabase( dbPath );
+
+    var self = this;
+    this._openDatabase( dbPath, function(error)
+			{
+			    if (!error && server)
+				self._io = self._setupSocket( server );
+			    callback( error );
+			} );
 };
 
 DatabaseManager.prototype =
@@ -1437,7 +1441,7 @@ DatabaseManager.prototype =
 	} );
     },
     
-    _openDatabase: function (dbPath)
+    _openDatabase: function (dbPath, callback)
     {
 	console.log( dbPath );
 	try
@@ -1520,7 +1524,8 @@ DatabaseManager.prototype =
 	    if (error)
 	    {
 		console.log( error );
-		throw error;
+		callback( error );
+		return;
 	    }
 	    last_tx = result[0][0].max;
 	    max_tx = 0;
@@ -1547,14 +1552,19 @@ DatabaseManager.prototype =
 			    if (error)
 			    {
 				console.log( error );
-				throw error;
+				callback( error );
+				return;
 			    }
 			    if (++i <= max_tx)
 				readTransaction();
+			    else
+				callback();
 			} );
 		};
 		if (i <= max_tx)
 		    readTransaction();
+		else
+		    callback();
 	    }
 	    else if (max_tx == last_tx && max_tx == 0)
 	    {
@@ -1570,8 +1580,10 @@ DatabaseManager.prototype =
 					 if (error)
 					 {
 					     console.log( error );
-					     throw error;
+					     callback( error );
+					     return;
 					 }
+					 callback();
 				     } );
 	    }
 	    conn.close();
@@ -1593,130 +1605,279 @@ DatabaseManager.prototype =
 	    date = new Date();
 	    trans.date = date.toString();
 	}
+	var jsonTrans = JSON.stringify( trans );
 	console.log( trans );
 	conn.insert( "INSERT INTO tx (user, timestamp) VALUES (?, ?)",
 		     [ trans.user,
 		       parseInt( (date.getTime() / 1000).toFixed() ) ] );
+
+	var checkPaths = function()
+	{
+	    console.log( 'checkPaths' );
+	    var pathsToLookup = { };
+
+	    for (var i in trans.transaction)
+	    {
+		var step = trans.transaction[i];
+
+		if (step.method == 'create')
+		{
+		    if (typeof( step.parent ) == 'string')
+			pathsToLookup[ step.parent ] = 1;
+		}
+		else if (step.method == 'update' || step.method == 'delete')
+		{
+		    if (typeof( step.node ) == 'string')
+			pathsToLookup[ step.node ] = 1;
+		}
+		else if (step.method == 'addRelationship' || step.method == 'deleteRelationship')
+		{
+		    if (typeof( step.to ) == 'string')
+			pathsToLookup[ step.to ] = 1;
+		    if (typeof( step.from ) == 'string')
+			pathsToLookup[ step.from ] = 1;
+		}
+	    }
+
+	    var lookupPaths = function(error, rows)
+	    {
+		console.log( 'lookup paths' );
+		if (error)
+		{
+		    conn.rollback();
+		    console.log( 'check transaction error' );
+		    callback( error );
+		    return;
+		}
+		var cont = false;
+		for (var i=0; i < rows[0].length; i++)
+		{
+		    var path = rows[0][i].parentPath + rows[0][i].pathElem + "/";
+		    var moreWork = { };
+
+		    for (var j=0; j < pathsToLookup; j++)
+		    {
+			var cmp = comparePaths( path, pathsToLookup[j] );
+
+			if (!cmp)
+			    continue;
+			else if (typeof( cmp ) == 'string')
+			{
+			    if (moreWork[ cmp ])
+				continue;
+			    moreWork[ cmp ] = 1;
+			    cont = true;
+			    conn.query( "SELECT ? AS parentPath, pathElem, id, revision "
+					+ "FROM node "
+					+ "WHERE parent=? AND pathElem=? ",
+					path, rows[0][i].id, cmp );
+			}
+			else
+			    pathsToLookup[ j ] = { id: rows[0][i].id, revision: rows[0][i].revision };
+		    }
+		}
+		if (cont)
+		{
+		    conn.go( lookupPaths );
+		}
+		else
+		{
+		    for (var i in trans.transaction)
+		    {
+			var step = trans.transaction[i];
+
+			if (step.method == 'create')
+			{
+			    if (typeof( step.parent ) == 'string')
+			    {
+				if (typeof pathsToLookup[ step.parent ] == 'object')
+				    step.parent = pathsToLookup[ step.parent ];
+				else
+				    callback( new Error( 'Could not find ' + pathsToLookup[ step.parent ] ) );
+			    }
+			}
+			else if (step.method == 'update' || step.method == 'delete')
+			{
+			    if (typeof( step.node ) == 'string')
+			    {
+				if (typeof pathsToLookup[ step.node ] == 'object')
+				    step.node = pathsToLookup[ step.node ];
+				else
+				    callback( new Error( 'Could not find ' + pathsToLookup[ step.node ] ) );
+			    }
+			}
+			else if (step.method == 'addRelationship' || step.method == 'deleteRelationship')
+			{
+			    if (typeof( step.to ) == 'string')
+			    {
+				if (typeof pathsToLookup[ step.to ] == 'object')
+				    step.to = pathsToLookup[ step.to ];
+				else
+				    callback( new Error( 'Could not find ' + pathsToLookup[ step.to ] ) );
+			    }
+			    if (typeof( step.from ) == 'string')
+			    {
+				if (typeof pathsToLookup[ step.from ] == 'object')
+				    step.from = pathsToLookup[ step.from ];
+				else
+				    callback( new Error( 'Could not find ' + pathsToLookup[ step.from ] ) );
+			    }
+			}
+		    }
+		    checkNodes();
+		}
+	    }
+
+	    if (pathsToLookup.length > 0)
+	    {
+		var moreWork = { };
+
+		for (var j=0; j < pathsToLookup; j++)
+		{
+		    var cmp = comparePaths( '/', pathsToLookup[j] );
+
+		    if (typeof( cmp ) == 'string')
+		    {
+			if (moreWork[ cmp ])
+			    continue;
+			moreWork[ cmp ] = 1;
+			conn.query( "SELECT ? AS parentPath, pathElem, id, revision "
+				    + "FROM node "
+				    + "WHERE parent=? AND pathElem=? ",
+				    '/', rows[0][i].id, cmp );
+		    }
+		}
+		conn.go( lookupPaths );
+	    }
+	    else
+		checkNodes();
+	}
+
 	var newNodes = { };
 	var nodesToCheck = { };
-	for (var i in trans.transaction)
+	var checkNodes = function()
 	{
-	    var step = trans.transaction[i];
+	    console.log( 'checkNodes' );
+	    for (var i in trans.transaction)
+	    {
+		var step = trans.transaction[i];
 
-	    if (step.method == 'create')
-	    {
-		if (isFinite( step.parent ))
+		if (step.method == 'create')
 		{
-		    if (step.parent != 0 && !newNodes[ step.parent ])
+		    if (typeof step.parent == 'number')
 		    {
-			conn.rollback();
-			console.log( 'no such parent ' + step.parent );
-			callback( new Error() );
-			return;
+			if (step.parent != 0 && !newNodes[ step.parent ])
+			{
+			    conn.rollback();
+			    console.log( 'no such parent ' + step.parent );
+			    callback( new Error() );
+			    return;
+			}
 		    }
+		    else if (!nodesToCheck[ step.parent.id ])
+		    {
+			nodesToCheck[ step.parent.id ] = 1;
+			conn.query( "SELECT 'node' AS type, id, revision "
+				    + "FROM node "
+				    + "WHERE id=? AND active=1",
+				    [ step.parent.id ] );
+		    }
+		    newNodes[ step.nodeId ] = 1;
 		}
-		else if (!nodesToCheck[ step.parent.id ])
+		else if (step.method == 'update')
 		{
-		    nodesToCheck[ step.parent.id ] = 1;
-		    conn.query( "SELECT 'node' AS type, id, revision "
-				+ "FROM node "
-				+ "WHERE id=? AND active=1",
-				[ step.parent.id ] );
-		}
-		newNodes[ step.nodeId ] = 1;
-	    }
-	    else if (step.method == 'update')
-	    {
-		if (!nodesToCheck[ step.node.id ])
-		{
-		    nodesToCheck[ step.node.id ] = 1;
-		    conn.query( "SELECT 'node' AS type, id, revision "
-				+ "FROM node "
-				+ "WHERE id=? AND active=1",
+		    if (!nodesToCheck[ step.node.id ])
+		    {
+			nodesToCheck[ step.node.id ] = 1;
+			conn.query( "SELECT 'node' AS type, id, revision "
+				    + "FROM node "
+				    + "WHERE id=? AND active=1",
+				    [ step.node.id ] );
+		    }
+		    conn.query( "SELECT 'attribute' AS type, node_id, name "
+				+ "FROM attribute "
+				+ "WHERE node_id=? AND active=1",
 				[ step.node.id ] );
 		}
-		conn.query( "SELECT 'attribute' AS type, node_id, name "
-			    + "FROM attribute "
-			    + "WHERE node_id=? AND active=1",
-			    [ step.node.id ] );
-	    }
-	    else if (step.method == 'delete')
-	    {
-		if (!nodesToCheck[ step.node.id ])
+		else if (step.method == 'delete')
 		{
-		    nodesToCheck[ step.node.id ] = 1;
-		    conn.query( "SELECT 'node' AS type, id, revision "
-				+ "FROM node "
-				+ "WHERE id=? AND active=1",
-				[ step.node.id ] );
-		}
-	    }
-	    else if (step.method == 'addRelationship')
-	    {
-		if (isFinite( step.to ))
-		{
-		    if (!newNodes[ step.to ])
+		    if (!nodesToCheck[ step.node.id ])
 		    {
-			conn.rollback();
-			callback( new Error() );
-			return;
+			nodesToCheck[ step.node.id ] = 1;
+			conn.query( "SELECT 'node' AS type, id, revision "
+				    + "FROM node "
+				    + "WHERE id=? AND active=1",
+				    [ step.node.id ] );
 		    }
 		}
-		else if (!nodesToCheck[ step.to.id ])
+		else if (step.method == 'addRelationship')
 		{
-		    nodesToCheck[ step.to.id ] = 1;
-		    conn.query( "SELECT 'node' AS type, id, revision "
-				+ "FROM node "
-				+ "WHERE id=? AND active=1",
-				[ step.to.id ] );
-		}
-		if (isFinite( step.from ))
-		{
-		    if (!newNodes[ step.from ])
+		    if (typeof step.to == 'number')
 		    {
-			conn.rollback();
-			console.log( 'no such from ' + step.from );
-			callback( new Error() );
-			return;
+			if (!newNodes[ step.to ])
+			{
+			    conn.rollback();
+			    callback( new Error() );
+			    return;
+			}
 		    }
+		    else if (!nodesToCheck[ step.to.id ])
+		    {
+			nodesToCheck[ step.to.id ] = 1;
+			conn.query( "SELECT 'node' AS type, id, revision "
+				    + "FROM node "
+				    + "WHERE id=? AND active=1",
+				    [ step.to.id ] );
+		    }
+		    if (typeof step.from == 'number')
+		    {
+			if (!newNodes[ step.from ])
+			{
+			    conn.rollback();
+			    console.log( 'no such from ' + step.from );
+			    callback( new Error() );
+			    return;
+			}
+		    }
+		    else if (!nodesToCheck[ step.from.id ])
+		    {
+			nodesToCheck[ step.from.id ] = 1;
+			conn.query( "SELECT 'node' AS type, id, revision "
+				    + "FROM node "
+				    + "WHERE id=? AND active=1",
+				    [ step.from.id ] );
+		    }
+		    if (typeof step.to != 'number' && typeof step.from != 'number')
+			conn.query( "SELECT 'relationship' AS type, from_id, to_id, name "
+				    + "FROM relationship "
+				    + "WHERE from_id=? AND to_id=? AND name=? ",
+				    [ step.from.id, step.to.id, step.name ] );
 		}
-		else if (!nodesToCheck[ step.from.id ])
+		else if (step.method == 'deleteRelationship')
 		{
-		    nodesToCheck[ step.from.id ] = 1;
-		    conn.query( "SELECT 'node' AS type, id, revision "
-				+ "FROM node "
-				+ "WHERE id=? AND active=1",
-				[ step.from.id ] );
-		}
-		if (!isFinite( step.to ) && !isFinite( step.from ))
+		    if (!nodesToCheck[ step.to.id ])
+		    {
+			nodesToCheck[ step.to.id ] = 1;
+			conn.query( "SELECT 'node' AS type, id, revision "
+				    + "FROM node "
+				    + "WHERE id=? AND active=1",
+				    [ step.to.id ] );
+		    }
+		    if (!nodesToCheck[ step.from.id ])
+		    {
+			nodesToCheck[ step.from.id ] = 1;
+			conn.query( "SELECT 'node' AS type, id, revision "
+				    + "FROM node "
+				    + "WHERE id=? AND active=1",
+				    [ step.from.id ] );
+		    }
 		    conn.query( "SELECT 'relationship' AS type, from_id, to_id, name "
 				+ "FROM relationship "
 				+ "WHERE from_id=? AND to_id=? AND name=? ",
 				[ step.from.id, step.to.id, step.name ] );
-	    }
-	    else if (step.method == 'deleteRelationship')
-	    {
-		if (!nodesToCheck[ step.to.id ])
-		{
-		    nodesToCheck[ step.to.id ] = 1;
-		    conn.query( "SELECT 'node' AS type, id, revision "
-				+ "FROM node "
-				+ "WHERE id=? AND active=1",
-				[ step.to.id ] );
 		}
-		if (!nodesToCheck[ step.from.id ])
-		{
-		    nodesToCheck[ step.from.id ] = 1;
-		    conn.query( "SELECT 'node' AS type, id, revision "
-				+ "FROM node "
-				+ "WHERE id=? AND active=1",
-				[ step.from.id ] );
-		}
-		conn.query( "SELECT 'relationship' AS type, from_id, to_id, name "
-			    + "FROM relationship "
-			    + "WHERE from_id=? AND to_id=? AND name=? ",
-			    [ step.from.id, step.to.id, step.name ] );
 	    }
+	    conn.go( checkTransaction );
 	}
 
 	var nodes = { };
@@ -1819,8 +1980,6 @@ DatabaseManager.prototype =
 	    } );
 	};
 
-	conn.go( checkTransaction );
-
 	var transStep = 0;
 	var updatedNodes = {};
 
@@ -1829,7 +1988,7 @@ DatabaseManager.prototype =
 	    console.log( 'storeTransaction' );
 	    if (transStep >= trans.transaction.length)
 	    {
-		fs.writeFileSync( 'transactions/' + revision + '.json', JSON.stringify( trans ) );
+		fs.writeFileSync( 'transactions/' + revision + '.json', jsonTrans );
 		conn.commit();
 		conn.go( function (error, rows) {
 		    if (error)
@@ -2027,7 +2186,8 @@ DatabaseManager.prototype =
 			     [ revision, from, to, step.name ] );
 	    }
 	};
-	
+
+	checkPaths();
     },
 
     fastGet: function( id, attr, user, callback )
@@ -2518,6 +2678,33 @@ function isEmpty( obj )
 	    return false;
     }
     return true;
+}
+
+function addPathToLookup( pathsToLookup, path )
+{
+    path = splitPath( path );
+    lookup = pathsToLookup;
+    for (var i=0; i < path.length; i++)
+    {
+	if (!lookup[ path[i] ])
+	    lookup[ path[i] ] = { };
+	lookup = lookup[ path[i] ];
+    }
+}
+
+function comparePaths( pathA, pathB )
+{
+    if (!endsWith( pathA, '/' ))
+	pathA += '/';
+    if (!endsWith( pathB, '/' ))
+	pathB += '/';
+
+    if (pathA == pathB)
+	return true;
+    if (pathA.length > pathB.length
+	|| pathA.substring( 0, pathB.length) != pathB)
+	return false;
+    return pathB.substring( pathA.length ).split( '/' )[0];
 }
 
 exports.DatabaseManager = DatabaseManager;

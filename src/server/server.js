@@ -170,14 +170,16 @@ var server = http.createServer(function (req, res) {
 server.listen(8124, "127.0.0.1");
 
 db = require("./database");
-dbMgr = new db.DatabaseManager(server, dbFile);
-
-if (config.db)
-{
-    for (var i in config.db)
-    {
-	dbMgr.mkdirp( config.db[i] );
-    }
-}
-
-console.log( 'Server running at http://127.0.0.1:8124/' );
+dbMgr = new db.DatabaseManager(server, dbFile, function (error)
+			       {
+				   if (error)
+				       return;
+				   if (config.db)
+				   {
+				       for (var i in config.db)
+				       {
+					   dbMgr.mkdirp( config.db[i] );
+				       }
+				   }
+				   console.log( 'Server running at http://127.0.0.1:8124/' );
+			       } );

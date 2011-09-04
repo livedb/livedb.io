@@ -96,3 +96,34 @@ function post(e)
     trans.go( null );
     $('#message').val( '' );
 }
+
+function newMeeting( name, description, callback )
+{
+    var trans = liveDb.transaction();
+
+    trans.create( '/messages/', { 'name': name, 'description': description } );
+    trans.go( callback );
+}
+
+function newThread( meeting, subject, firstMessage, callback )
+{
+    var trans = liveDb.transaction();
+    var thread;
+
+    thread = trans.create( meeting, { 'name': subject } );
+    trans.create( thread, { 'text': firstMessage } );
+    trans.go( callback );
+}
+
+function newMessage( thread, commentTo, message, callback )
+{
+    var trans = liveDb.transaction();
+    var newMessage;
+
+    newMessage = trans.create( thread, { 'text': message } );
+    if (commentTo)
+    {
+	trans.addRelationship( commentTo, newMessage, 'comment', true );
+    }
+    trans.go( callback );
+}
