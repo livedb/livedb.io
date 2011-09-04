@@ -1459,7 +1459,7 @@ DatabaseManager.prototype =
     
     _openDatabase: function (dbPath, callback)
     {
-	console.log( dbPath );
+//	console.log( dbPath );
 	try
 	{
 	    fs.statSync( dbPath );
@@ -1554,7 +1554,7 @@ DatabaseManager.prototype =
 		if (tx > max_tx)
 		    max_tx = tx;
 	    }
-	    console.log( 'max_tx=' + max_tx + " last_tx=" + last_tx );
+//	    console.log( 'max_tx=' + max_tx + " last_tx=" + last_tx );
 	    if (max_tx > last_tx)
 	    {
 		var i = last_tx + 1;
@@ -1613,7 +1613,7 @@ DatabaseManager.prototype =
     {
 	var self = this;
 
-	console.log( "run transaction" );
+//	console.log( "run transaction" );
 	var conn = this._db.connection();
 	conn.start( true );
 	if (trans.date)
@@ -1624,14 +1624,11 @@ DatabaseManager.prototype =
 	    trans.date = date.toString();
 	}
 	var jsonTrans = JSON.stringify( trans );
-	console.log( trans );
-	conn.insert( "INSERT INTO tx (user, timestamp) VALUES (?, ?)",
-		     [ trans.user,
-		       parseInt( (date.getTime() / 1000).toFixed() ) ] );
+//	console.log( trans );
 
 	var checkPaths = function()
 	{
-	    console.log( 'checkPaths' );
+//	    console.log( 'checkPaths' );
 	    var pathsToLookup = { };
 
 	    for (var i in trans.transaction)
@@ -1659,7 +1656,7 @@ DatabaseManager.prototype =
 
 	    var lookupPaths = function(error, rows)
 	    {
-		console.log( 'lookup paths' );
+//		console.log( 'lookup paths' );
 		if (error)
 		{
 		    conn.rollback();
@@ -1668,14 +1665,14 @@ DatabaseManager.prototype =
 		    return;
 		}
 		var cont = false;
-		for (var i=0; i < rows[0].length; i++)
+		for (var i=0; i < rows.length; i++)
 		{
-		    var path = rows[0][i].parentPath + rows[0][i].pathElem + "/";
+		    var path = rows[i][0].parentPath + rows[i][0].pathelem + "/";
 		    var moreWork = { };
 
-		    for (var j=0; j < pathsToLookup; j++)
+		    for (var p in pathsToLookup)
 		    {
-			var cmp = comparePaths( path, pathsToLookup[j] );
+			var cmp = comparePaths( path, p );
 
 			if (!cmp)
 			    continue;
@@ -1685,13 +1682,13 @@ DatabaseManager.prototype =
 				continue;
 			    moreWork[ cmp ] = 1;
 			    cont = true;
-			    conn.query( "SELECT ? AS parentPath, pathElem, id, revision "
+			    conn.query( "SELECT ? AS parentPath, pathelem, id, revision "
 					+ "FROM node "
-					+ "WHERE parent=? AND pathElem=? ",
-					path, rows[0][i].id, cmp );
+					+ "WHERE active=1 AND parent=? AND pathelem=? ",
+					[ path, rows[i][0].id, cmp ] );
 			}
 			else
-			    pathsToLookup[ j ] = { id: rows[0][i].id, revision: rows[0][i].revision };
+			    pathsToLookup[ p ] = { id: rows[i][0].id, revision: rows[i][0].revision };
 		    }
 		}
 		if (cont)
@@ -1711,7 +1708,10 @@ DatabaseManager.prototype =
 				if (typeof pathsToLookup[ step.parent ] == 'object')
 				    step.parent = pathsToLookup[ step.parent ];
 				else
-				    callback( new Error( 'Could not find ' + pathsToLookup[ step.parent ] ) );
+				{
+				    callback( new Error( 'Could not find ' + step.parent ) );
+				    return;
+				}
 			    }
 			}
 			else if (step.method == 'update' || step.method == 'delete')
@@ -1721,7 +1721,10 @@ DatabaseManager.prototype =
 				if (typeof pathsToLookup[ step.node ] == 'object')
 				    step.node = pathsToLookup[ step.node ];
 				else
-				    callback( new Error( 'Could not find ' + pathsToLookup[ step.node ] ) );
+				{
+				    callback( new Error( 'Could not find ' + step.node ) );
+				    return;
+				}
 			    }
 			}
 			else if (step.method == 'addRelationship' || step.method == 'deleteRelationship')
@@ -1731,14 +1734,20 @@ DatabaseManager.prototype =
 				if (typeof pathsToLookup[ step.to ] == 'object')
 				    step.to = pathsToLookup[ step.to ];
 				else
-				    callback( new Error( 'Could not find ' + pathsToLookup[ step.to ] ) );
+				{
+				    callback( new Error( 'Could not find ' + step.to ) );
+				    return;
+				}
 			    }
 			    if (typeof( step.from ) == 'string')
 			    {
 				if (typeof pathsToLookup[ step.from ] == 'object')
 				    step.from = pathsToLookup[ step.from ];
 				else
-				    callback( new Error( 'Could not find ' + pathsToLookup[ step.from ] ) );
+				{
+				    callback( new Error( 'Could not find ' + step.from ) );
+				    return;
+				}
 			    }
 			}
 		    }
@@ -1746,36 +1755,45 @@ DatabaseManager.prototype =
 		}
 	    }
 
-	    if (pathsToLookup.length > 0)
+	    var moreWork = { };
+	    var found = false;
+
+	    for (j in pathsToLookup)
 	    {
-		var moreWork = { };
+		var cmp = comparePaths( '/', j );
 
-		for (var j=0; j < pathsToLookup; j++)
+		if (typeof( cmp ) == 'string')
 		{
-		    var cmp = comparePaths( '/', pathsToLookup[j] );
-
-		    if (typeof( cmp ) == 'string')
-		    {
-			if (moreWork[ cmp ])
-			    continue;
-			moreWork[ cmp ] = 1;
-			conn.query( "SELECT ? AS parentPath, pathElem, id, revision "
-				    + "FROM node "
-				    + "WHERE parent=? AND pathElem=? ",
-				    '/', rows[0][i].id, cmp );
-		    }
+		    if (moreWork[ cmp ])
+			continue;
+		    found = true;
+		    moreWork[ cmp ] = 1;
+		    conn.query( "SELECT ? AS parentPath, pathelem, id, revision "
+				+ "FROM node "
+				+ "WHERE active=1 AND parent=? AND pathelem=? ",
+				[ '/', 0, cmp ] );
 		}
+	    }
+	    if (found)
+	    {
 		conn.go( lookupPaths );
 	    }
 	    else
+	    {
 		checkNodes();
+	    }
 	}
 
 	var newNodes = { };
 	var nodesToCheck = { };
 	var checkNodes = function()
 	{
-	    console.log( 'checkNodes' );
+//	    console.log( 'checkNodes' );
+
+	    conn.insert( "INSERT INTO tx (user, timestamp) VALUES (?, ?)",
+			 [ trans.user,
+			   parseInt( (date.getTime() / 1000).toFixed() ) ] );
+
 	    for (var i in trans.transaction)
 	    {
 		var step = trans.transaction[i];
@@ -1906,11 +1924,11 @@ DatabaseManager.prototype =
 
 	var checkTransaction = function(error, rows)
 	{
-	    console.log( 'check transaction' );
+//	    console.log( 'check transaction' );
 	    if (error)
 	    {
 		conn.rollback();
-		console.log( 'check transaction error' );
+//		console.log( 'check transaction error' );
 		callback( error );
 		return;
 	    }
@@ -1992,8 +2010,6 @@ DatabaseManager.prototype =
 		    return;
 		}
 		revision = rows[0][0].id;
-		console.log( rows );
-		console.log( revision );
 		storeTransaction();
 	    } );
 	};
@@ -2051,7 +2067,6 @@ DatabaseManager.prototype =
 
 		    var innerFindNodeId = function (error, res)
 		    {
-			console.log( "foo" );
 			if (error)
 			{
 			    conn.rollback();
@@ -2060,7 +2075,7 @@ DatabaseManager.prototype =
 			}
 			var nodeId = res[0][0].id;
 
-			console.log( nodeId );
+//			console.log( nodeId );
 			newNodes[ step.nodeId ] = nodeId;
 			updatedNodes[ nodeId ] = 1;
 
@@ -2072,7 +2087,7 @@ DatabaseManager.prototype =
 			storeTransaction();
 		    };
 
-		    console.log( res[ res.length-1 ] );
+//		    console.log( res[ res.length-1 ] );
 		    conn.query( "SELECT id FROM node WHERE ROWID=?",
 				 [ res[ res.length-1 ] ] );
 		    conn.go( innerFindNodeId );
@@ -2720,7 +2735,7 @@ function comparePaths( pathA, pathB )
     if (pathA == pathB)
 	return true;
     if (pathA.length > pathB.length
-	|| pathA.substring( 0, pathB.length) != pathB)
+	|| pathB.substring( 0, pathA.length) != pathA)
 	return false;
     return pathB.substring( pathA.length ).split( '/' )[0];
 }
