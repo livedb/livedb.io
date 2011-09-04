@@ -362,7 +362,7 @@ function newMeeting( name, description, callback )
 {
     var trans = liveDb.transaction();
 
-    trans.create( '/messages/', { 'name': name, 'description': description } );
+    trans.create( '/meetings/', { 'name': name, 'description': description } );
     trans.go( callback );
 }
 
