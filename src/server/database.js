@@ -2036,12 +2036,13 @@ DatabaseManager.prototype =
 
 	    if (step.method == 'create')
 	    {
-		if (isFinite( step.parent ))
+		if (typeof step.parent == 'number')
 		{
 		    if (step.parent == 0)
 			parent = step.parent;
 		    else
-			parent = nodes[ step.parent ];
+			parent = newNodes[ step.parent ];
+		    console.log( parent );
 		}
 		else
 		    parent = step.parent.id;
