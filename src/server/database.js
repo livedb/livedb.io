@@ -15,6 +15,7 @@ DatabaseManager = function (server, dbPath)
     this._subscriptions = {};
 
     this._lists = {};
+    this._nodes = {};
     this._userOnline = {};
     
     this._clientMethods =
@@ -26,6 +27,7 @@ DatabaseManager = function (server, dbPath)
 	'get':         this._clientGet,
 	'list':        this._clientList,
 	'moveList':    this._clientMoveList,
+	'closeNode':   this._clientCloseNode,
 	'closeList':   this._clientCloseList,
 	'tree':        this._clientTree,
     };
@@ -57,6 +59,7 @@ DatabaseManager.prototype =
     {
         this._subscriptions[ client.id ] = {};
         this._lists[ client.id ] = {};
+	this._nodes[ client.id ] = {};
     },
     
     _handleMessage: function (client, message /*, callback*/)
@@ -91,6 +94,9 @@ DatabaseManager.prototype =
             var sid = message.id;
 	    var user = client;
 	    var self = this;
+	    assert.ok( client.id && '' + client.id != 'undefined' );
+	    var nodes = self._nodes[ client.id ];
+	    nodes[ sid ] = message;
 
 	    this.get( message.nodeId, message.attr, user, function (error, res) {
 		if (error)
@@ -292,6 +298,16 @@ DatabaseManager.prototype =
 		innerMoveFirst( false );
 		break;
 	    }
+        }
+    },
+
+    _clientCloseNode: function (client, message)
+    {
+        if (( 'id' in message ))
+        {
+            var sid = message.id;
+            var nodes = this._nodes[ client.id ];
+            delete nodes[ sid ];
         }
     },
 

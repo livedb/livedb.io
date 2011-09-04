@@ -28,13 +28,16 @@ LiveDB.prototype = {
     },
 
     get: function (id, attr, callback){
+
 	var subscriberId = this._nextSubscriberId++;
-	this._eventSubscribers[subscriberId] = { id:subscriberId, fn:callback };
+	var node = new Node( subscriberId, callback );
+	this._eventSubscribers[subscriberId] = { id:subscriberId, fn:function( res ) {
+	    node.update( res );
+	} };
 	this._socket.json.send({ method:'get', nodeId:id, attr:attr, id:subscriberId });
-	return subscriberId;
+	return node;
     },
 
-    // get, list, tree
     list: function (callback, parent, relationship, searchQuery, attributeSpec,
 		    windowSize, windowStart, extraCondition, orderColumns) {
 
@@ -93,9 +96,14 @@ LiveDB.prototype = {
 	this._socket.json.send( obj );
     },
 
+    closeNode: function( sid ) {
+	delete this._eventSubscribers[ sid ];
+	this._socket.json.send( { method:'closeNode', id:sid } );
+    },
+
     closeList: function( sid ) {
 	delete this._eventSubscribers[ sid ];
-	this._socket.json.send( { method:'closeList', id:subscriberId } );
+	this._socket.json.send( { method:'closeList', id:sid } );
     }
 };
 
@@ -104,6 +112,31 @@ function _message (obj){
 	console.log(obj.message[0], obj.message[1]);
     }
 };
+
+function Node( sid, callback ) {
+    this._sid = sid;
+    this._res = null;
+    this._callback = callback;
+}
+
+Node.prototype =
+{
+    update: function( res )
+    {
+	this._res = res;
+	this._callback( this );
+    },
+
+    close: function()
+    {
+	_liveDb.closeNode( this._sid );
+    },
+
+    item: function()
+    {
+	return this._res;
+    }
+}
 
 function List( sid, callback ) {
     this._sid = sid;
