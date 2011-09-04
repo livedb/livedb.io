@@ -61,6 +61,7 @@ function partialViewNavigation( closeView )
 function viewUsers( )
 {
     var usersList;
+
     var usersDiv;
 
     var closeView = function( ) {
@@ -90,16 +91,17 @@ function viewUsers( )
 		.append($('<button></button>').text('Page down').click(function(){ usersList.next() }))
                );
 
-    usersDiv = $('#users');
-
     usersList = liveDb.list( usersCallback, '/users', '->', null, { '_online':1, 'name':1 },
 			     5, null, null, [ { name:'_online', dir:'desc' },
 					      { name:'name', dir:'asc', nocase:1 } ] );
+
+    usersDiv = $('#users');
 }
 
 function viewMeetings( )
 {
     var meetingsList;
+
     var meetingsDiv;
 
     var closeView = function( ) {
@@ -108,7 +110,7 @@ function viewMeetings( )
 
     var meetingsCallback = function( list ) {
 	// Redundancy: list == meetingsList
-	var meetings = meetingsList.items();
+	var meetings = list.items();
 	meetingsDiv.empty();
 	for (var i=0; i < meetings.length; i++)
 	{
@@ -130,10 +132,10 @@ function viewMeetings( )
 		.append($('<button/>', { text:'New meeting', click:function(){ closeView(); viewCreateMeeting() } } ))
                );
 
-    meetingsDiv = $('#meetings');
-
     meetingsList = liveDb.list( meetingsCallback, '/meetings', '->', null, { 'subject':1 },
 				5, null, null, [ { name:'_online', dir:'desc' } ] );
+
+    meetingsDiv = $('#meetings');
 }
 
 function viewCreateMeeting( )
@@ -141,23 +143,26 @@ function viewCreateMeeting( )
     var closeView = function( ) { };
 
     var create = function( ) {
-	var subject = $('#subjectInput').val();
-
-	var transaction = liveDb.transaction();
-	transaction.create( '/meetings', { subject:subject }, null );
-	transaction.go();
-	transaction.close();
-
-	viewMeetings();
+	var name = $('#nameInput').val();
+	var description = $('#descriptionInput').val();
+	newMeeting( name, description, function( res, error) {
+	    viewMeetings();	    
+	});
     };
 
     root.empty();
     root.append($('<h1></h1>').text('Forum'))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div></div>').attr('id', 'container')
-		.append($('<h2></h2>').text('New meeting'))
-		.append($('<label/>', { id:'subjectLabel', 'for':'subjectInput', text:'Subject' } ))
-		.append($('<input/>', { id:'subjectInput' } ))
+        .append($('<div/>', { id:'container' })
+		.append($('<h2/>', { text:'New meeting' }))
+		.append($('<label/>', { id:'nameLabel', 'for':'nameInput', text:'Name' } ))
+		.append($('<br/>'))
+		.append($('<input/>', { id:'nameInput' } ))
+		.append($('<br/>'))
+		.append($('<label/>', { id:'descriptionLabel', 'for':'descriptionInput', text:'Description' } ))
+		.append($('<br/>'))
+		.append($('<input/>', { id:'descriptionInput' } ))
+		.append($('<br/>'))
 		.append($('<button/>', { text:'Create', click:function(){ closeView(); create() } } ))
                );
 }
@@ -165,6 +170,7 @@ function viewCreateMeeting( )
 function viewMeeting( meeting )
 {
     var meetingNode;
+
     var threadsList;
 
     var threadsDiv;
@@ -205,12 +211,12 @@ function viewMeeting( meeting )
 					 click:function(){ closeView(); viewCreateThread( meetingNode.item() ) } } ))
                );
 
-    threadsDiv = $('#threads');
+    meetingNode = liveDb.get( meeting, { 'subject':1 }, meetingCallback );
 
     threadsList = liveDb.list( threadsCallback, meeting, '->', null, { 'subject':1 },
 			       5, null, null, [ { name:'subject', dir:'asc', nocase:1 } ] );
 
-    meetingNode = liveDb.get( meeting, { 'subject':1 }, meetingCallback );
+    threadsDiv = $('#threads');
 }
 
 function viewCreateThread( meeting ) {
@@ -218,18 +224,11 @@ function viewCreateThread( meeting ) {
 
     var create = function( ) {
 	var subject = $('#subjectInput').val();
+	var firstMessage = $('#contentsInput').val();
 
-	var author = 'me';
-	var time = 1;
-	var contents = $('#contentsInput').val();
-
-	var transaction = liveDb.transaction();
-	var thread = transaction.create( meeting, { subject:subject }, null );
-	transaction.create( thread, { author:author, time:time, contents:contents }, null );
-	transaction.go();
-	transaction.close();
-
-	viewMeeting( meeting );
+	newThread( meeting, subject, firstMessage, function( res, error ) {
+	    viewMeeting( meeting );
+	});
     };
 
     root.empty();
@@ -252,6 +251,7 @@ function viewCreateThread( meeting ) {
 function viewThread( thread )
 {
     var threadNode;
+
     var messagesList;
 
     var messagesContainer;
@@ -277,6 +277,9 @@ function viewThread( thread )
             messagesContainer.append($('<div/>', { addClass: message.u_read ? 'no-unread' : 'unread' })
 				     .append($('<p/>', { text:message.author+' says:' }))
 				     .append($('<p/>', { text:message.contents }))
+				     .append($('<button/>', { text:'Comment',
+							      click:{ closeView();
+								      viewCreateMessage(threadNode.item(), message) }}))
 				    );
 	}
     }
@@ -295,32 +298,27 @@ function viewThread( thread )
 		.append($('<button/>', { text:'Previous unread', click:function(){ messagesList.previousSelected() }}))
 		.append($('<button/>', { text:'Next unread', click:function(){ messagesList.nextSelected() }}))
 		.append($('<button/>', { text:'New message',
-					 click:function(){ closeView(); viewCreateMessage( threadNode.item() ) }}))
+					 click:function(){ closeView(); viewCreateMessage( threadNode.item(), null ) }}))
                );
 
-    messagesContainer = $('#messages');
+    threadNode = liveDb.get( thread, { 'subject':1 }, threadCallback );
 
     messagesList = liveDb.list( messagesCallback, thread, '->', null, { 'author':1, 'contents':1, 'time':1, 'u_read':1 },
 				5, null, 'u_read', [ { name:'time', dir:'asc' },
 						     { name:'author', dir:'asc', nocase:1 } ] );
 
-    threadNode = liveDb.get( thread, { 'subject':1 }, threadCallback );
+    messagesContainer = $('#messages');
 }
 
-function viewCreateMessage( thread ) {
+function viewCreateMessage( thread, commentTo ) {
     var closeView = function( ) { };
 
     var create = function( ) {
-	var author = 'me';
-	var time = 2;
-	var contents = $('#contentsInput').val();
+	var message = $('#contentsInput').val();
 
-	var transaction = liveDb.transaction();
-	transaction.create( thread, { author:author, time:time, contents:contents }, null );
-	transaction.go();
-	transaction.close();
-
-	viewThread( thread );
+	newMessage( thread, commentTo, message, function ( res, error ) {
+	    viewThread( thread );
+	});
     };
 
     root.empty();
@@ -336,30 +334,33 @@ function viewCreateMessage( thread ) {
                );
 }
 
-// function messagesCallback( messages )
-// {
-//     messagesDiv.empty();
-//     messagesDiv.append( $( '<p></p>' ).text( 'Showing ' + messages.offset() + '-'
-// 					     + (messages.offset() + messages.items().length) + ' of '
-// 					     + messages.size() + ' messages' ) );
-//     messages = messages.items();
-//     for (var i=0; i < messages.length; i++)
-// 	messagesDiv//.append($('<p></p>').text('Posted by '+messages[i].author[0].name+' on '+messages[i].date))
-//         .append($('<p></p>').text(messages[i].text));
-// }
+function newMeeting( name, description, callback )
+{
+    var trans = liveDb.transaction();
 
-// var messagesObj;
+    trans.create( '/messages/', { 'name': name, 'description': description } );
+    trans.go( callback );
+}
 
-// function messagesObjCallback( _messagesObj )
-// {
-//     messagesObj = _messagesObj;
-// }
+function newThread( meeting, subject, firstMessage, callback )
+{
+    var trans = liveDb.transaction();
+    var thread;
 
-// function post(e)
-// {
-//     var trans = liveDb.transaction();
+    thread = trans.create( meeting, { 'name': subject } );
+    trans.create( thread, { 'text': firstMessage } );
+    trans.go( callback );
+}
 
-//     trans.create( messagesObj, { 'text' : $('#message').val() }, null );
-//     trans.go( null );
-//     $('#message').val( '' );
-// }
+function newMessage( thread, commentTo, message, callback )
+{
+    var trans = liveDb.transaction();
+    var newMessage;
+
+    newMessage = trans.create( thread, { 'text': message } );
+    if (commentTo)
+    {
+	trans.addRelationship( commentTo, newMessage, 'comment', true );
+    }
+    trans.go( callback );
+}

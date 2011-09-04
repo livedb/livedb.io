@@ -248,7 +248,8 @@ Transaction.prototype =
 
     update: function( node, attributes, values )
     {
-	node = { id: node.id, revision: node.revision };
+	if (node && node.id)
+	    node = { id: node.id, revision: node.revision };
 	this.transaction.push(
 	    {
 		method: 'update',
@@ -260,7 +261,8 @@ Transaction.prototype =
 
     delete: function( node )
     {
-	node = { id: node.id, revision: node.revision };
+	if (node && node.id)
+	    node = { id: node.id, revision: node.revision };
 	this.transaction.push(
 	    {
 		method: 'delete',
@@ -270,9 +272,9 @@ Transaction.prototype =
 
     addRelationship: function( to, from, name, checkLoop )
     {
-	if (!isFinite( to ))
+	if (to && to.id)
 	    to = { id: to.id, revision: to.revision };
-	if (!isFinite( from ))
+	if (from && from.id)
 	    from = { id: from.id, revision: from.revision };
 	this.transaction.push(
 	    {
@@ -286,8 +288,10 @@ Transaction.prototype =
  
     deleteRelationship: function( to, from, name )
     {
-	to = { id: to.id, revision: to.revision };
-	from = { id: from.id, revision: from.revision };
+	if (to && to.id)
+	    to = { id: to.id, revision: to.revision };
+	if (from && from.id)
+	    from = { id: from.id, revision: from.revision };
 	this.transaction.push(
 	    {
 		method: 'deleteRelationship',
