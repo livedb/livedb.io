@@ -82,13 +82,13 @@ function viewUsers( )
 	    {
 		hasOnline = true;
 		onlineList.append($('<li/>', { text:user.name,
-					       addClass:list.selectedId() == user.id ? 'selected' : 'no-selected' } ));
+					       'class':list.selectedId() == user.id ? 'selected' : 'no-selected' } ));
 	    }
 	    else
 	    {
 		hasOffline = true;
 		offlineList.append($('<li/>', { text:user.name,
-						addClass:list.selectedId() == user.id ? 'selected' : 'no-selected' } ));
+						'class':list.selectedId() == user.id ? 'selected' : 'no-selected' } ));
 	    }
 	}
 	usersDiv.empty();
@@ -147,8 +147,8 @@ function viewMeetings( )
 	    var view = function( meeting ) { return function () {
 		viewMeeting( meeting );
 	    }};
-	    meetingsDiv.append($('<div/>', { addClass:'meeting'
-					     + list.selectedId() == meeting.id ? ' selected' : ' no-selected',
+	    meetingsDiv.append($('<div/>', { 'class':'meeting'
+					     + (list.selectedId() == meeting.id ? ' selected' : ' no-selected'),
 					     click:view( meeting ) })
 			       .append($('<p/>', { text:meeting.name }))
 			       .append($('<p/>', { text:meeting.description }))
@@ -196,7 +196,7 @@ function viewCreateMeeting( )
     root.empty();
     root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>', { id:'container', addClass:'inputForm' })
+        .append($('<div/>', { id:'container', 'class':'inputForm' })
 		.append($('<h2/>', { text:'New meeting' }))
 		.append($('<label/>', { id:'nameLabel', 'for':'nameInput', text:'Name' } ))
 		.append($('<br/>'))
@@ -240,9 +240,9 @@ function viewMeeting( meeting )
 		viewThread( thread );
 	    }};
 	    threadsDiv.append($('<div/>', { click:view( thread ),
-					    addClass:'thread ' + list.selectedId() == thread.id ? 'selected' : 'no-selected' })
-			      .append($('<p/>', { text:thread.subject, addClass:'subject' } ))
-			      .append($('<p/>', { text:thread.description, addClass:'description' } ))
+					    'class':'thread ' + list.selectedId() == thread.id ? 'selected' : 'no-selected' })
+			      .append($('<p/>', { text:thread.subject, 'class':'subject' } ))
+			      .append($('<p/>', { text:thread.description, 'class':'description' } ))
 			     );
 	}
 	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
@@ -290,7 +290,7 @@ function viewCreateThread( meeting )
     root.empty();
     root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>', { id:'container', addClass:'inputForm' })
+        .append($('<div/>', { id:'container', 'class':'inputForm' })
 		.append($('<h2/>').text('New thread'))
 		.append($('<label/>', { id:'subjectLabel', 'for':'subjectInput', text:'Subject' } ))
 		.append($('<br/>'))
@@ -333,7 +333,7 @@ function viewThread( thread )
 	    var comment = function( message ) { return function () {
 		viewCreateMessage( threadNode.item(), message );
 	    }};
-            messagesContainer.append($('<div/>', { addClass: 'message'
+            messagesContainer.append($('<div/>', { 'class': 'message'
 						   + (message.u_read ? ' no-unread' : ' unread')
 						   + (list.selectedId() == message.id ? ' selected' : ' no-selected') })
 				     .append($('<p/>', { text:message.text }))
@@ -346,7 +346,7 @@ function viewThread( thread )
     root.empty();
     root.append($('<h1/>').text('Forum'))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>', { id:'container', addClass:'thread' })
+        .append($('<div/>', { id:'container', 'class':'thread' })
 		.append($('<h2/>', { text:'Thread', id:'threadHeading' }))
 		.append($('<h3/>', { id:'threadSubject' }))
 		.append($('<div/>', { id:'messages' })
@@ -386,7 +386,7 @@ function viewCreateMessage( thread, commentTo )
     root.empty();
     root.append($('<h1/>').text('Forum'))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>', { id:'container', addClass:'inputForm' })
+        .append($('<div/>', { id:'container', 'class':'inputForm' })
 		.append($('<h2/>').text('New message'))
 		.append($('<label/>', { id:'textLabel', 'for':'textInput', text:'Message' } ))
 		.append($('<br/>'))

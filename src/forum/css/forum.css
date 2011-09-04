@@ -15,8 +15,13 @@ p.selected
     font-weight: bold;
 }
 
-.thread
+.meeting, .thread, .message
 {
-    border: 1px solid bluegray;
+    border: 1px solid #bbf;
     background: #ccf;
+}
+
+.meeting:hover, .thread:hover, .message:hover
+{
+    background: #eef;
 }
