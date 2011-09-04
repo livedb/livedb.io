@@ -77,18 +77,20 @@ function viewUsers( )
             usersDiv.append($('<p/>', { text:users[i].name + ' ('+users[i]._online+')',
 					addClass:usersList.selectedId() == users[i].id ? 'selected' : 'no-selected' } ));
 	}
+	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
     };
 
     root.empty();
-    root.append($('<h1></h1>').text('Forum'))
+    root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div></div>').attr('id', 'container')
-		.append($('<h2></h2>').text('Users'))
-		.append($('<div></div>').attr('id', 'users')
-			.append($('<p></p>').text('Fetching users...'))
+        .append($('<div/>', { id:'container' })
+		.append($('<h2/>', { text:'Users' }))
+		.append($('<div/>', { id:'users' })
+			.append($('<p/>', { text:'Fetching users...' }))
 		       )
-		.append($('<button></button>').text('Page up').click(function(){ usersList.previous() }))
-		.append($('<button></button>').text('Page down').click(function(){ usersList.next() }))
+		.append($('<p/>', { id:'index' }))
+		.append($('<button/>', { text:'Page up', click:function(){ usersList.previous() }}))
+		.append($('<button/>', { text:'Page down', click:function(){ usersList.next() }}))
                );
 
     usersList = liveDb.list( usersCallback, '/users', '->', null, { '_online':1, 'name':1 },
@@ -115,20 +117,25 @@ function viewMeetings( )
 	for (var i=0; i < meetings.length; i++)
 	{
 	    var meeting = meetings[i];
-            meetingsDiv.append($('<p/>', { text:meetings[i].subject, click:function(){ viewMeeting( meeting ) } }));
+	    var view = function( meeting ) { return function () {
+		viewMeeting( meeting );
+	    }};
+            meetingsDiv.append($('<p/>', { text:meeting.subject, click:view( meeting ) }));
 	}
+	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
     };
 
     root.empty();
-    root.append($('<h1></h1>').text('Forum'))
+    root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div></div>').attr('id', 'container')
-		.append($('<h2></h2>').text('Meetings'))
-		.append($('<div></div>').attr('id', 'meetings')
-			.append($('<p></p>').text('Fetching meetings...'))
+        .append($('<div/>', { id:'container' })
+		.append($('<h2/>', { text:'Meetings' }))
+		.append($('<div/>', { id:'meetings' })
+			.append($('<p/>', { text:'Fetching meetings...' }))
 		       )
-		.append($('<button></button>').text('Page up').click(function(){ meetingsList.previous() }))
-		.append($('<button></button>').text('Page down').click(function(){ meetingsList.next() }))
+		.append($('<p/>', { id:'index' }))
+		.append($('<button/>', { text:'Page up', click:function(){ meetingsList.previous() }}))
+		.append($('<button/>', { text:'Page down', click:function(){ meetingsList.next() }}))
 		.append($('<button/>', { text:'New meeting', click:function(){ closeView(); viewCreateMeeting() } } ))
                );
 
@@ -145,13 +152,16 @@ function viewCreateMeeting( )
     var create = function( ) {
 	var name = $('#nameInput').val();
 	var description = $('#descriptionInput').val();
-	newMeeting( name, description, function( res, error) {
-	    viewMeetings();	    
+
+	newMeeting( name, description, function( error ) {
+	    // TODO
 	});
+
+	viewMeetings();	    
     };
 
     root.empty();
-    root.append($('<h1></h1>').text('Forum'))
+    root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
         .append($('<div/>', { id:'container' })
 		.append($('<h2/>', { text:'New meeting' }))
@@ -183,7 +193,7 @@ function viewMeeting( meeting )
     var meetingCallback = function( node ) {
 	// Redundancy: node == meetingNode;
 	var item = node.item();
-	$('#meetingHeading').text('Meeting ' + item.subject);
+	$('#meetingDescription').text(item.description);
     }
 
     var threadsCallback = function( list ) {
@@ -193,8 +203,15 @@ function viewMeeting( meeting )
 	for (var i=0; i < threads.length; i++)
 	{
 	    var thread = threads[i];
-            threadsDiv.append($('<p/>', { text:thread.subject, click:function(){ viewThread( thread ) } }));
+	    var view = function( thread ) { return function() {
+		viewThread( thread );
+	    }};
+	    threadsDiv.append($('<div/>', { click:view( thread ), addClass:'thread' })
+			      .append($('<p/>', { text:thread.subject, addClass:'subject' } ))
+			      .append($('<p/>', { text:thread.description, addClass:'description' } ))
+			     );
 	}
+	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
     }
 
     root.empty();
@@ -202,11 +219,13 @@ function viewMeeting( meeting )
 	.append(partialViewNavigation( closeView ))
         .append($('<div/>').attr('id', 'container')
 		.append($('<h2/>', { text:'Meeting', id:'meetingHeading' }))
+		.append($('<p/>', { id:'meetingDescription' }))
 		.append($('<ul/>').attr('id', 'threads')
 			.append($('<li></li>').text('Fetching threads...'))
 		       )
-		.append($('<button/>').text('Page up').click(function(){ threadsList.previous() }))
-		.append($('<button/>').text('Page down').click(function(){ threadsList.next() }))
+		.append($('<p/>', { id:'index' }))
+		.append($('<button/>', { text:'Page up', click:function(){ threadsList.previous() }}))
+		.append($('<button/>', { text:'Page down', click:function(){ threadsList.next() }}))
 		.append($('<button/>', { text:'New thread',
 					 click:function(){ closeView(); viewCreateThread( meetingNode.item() ) } } ))
                );
@@ -226,9 +245,11 @@ function viewCreateThread( meeting ) {
 	var subject = $('#subjectInput').val();
 	var firstMessage = $('#contentsInput').val();
 
-	newThread( meeting, subject, firstMessage, function( res, error ) {
-	    viewMeeting( meeting );
+	newThread( meeting, subject, firstMessage, function( error ) {
+	    // TODO
 	});
+
+	viewMeeting( meeting );
     };
 
     root.empty();
@@ -274,14 +295,15 @@ function viewThread( thread )
 	for (var i=0; i < messages.length; i++)
 	{
 	    var message = messages[i];
-            messagesContainer.append($('<div/>', { addClass: message.u_read ? 'no-unread' : 'unread' })
-				     .append($('<p/>', { text:message.author+' says:' }))
-				     .append($('<p/>', { text:message.contents }))
-				     .append($('<button/>', { text:'Comment',
-							      click:{ closeView();
-								      viewCreateMessage(threadNode.item(), message) }}))
+	    var comment = function( message ) { return function () {
+		viewCreateMessage( threadNode.item(), message );
+	    }};
+            messagesContainer.append($('<div/>', { addClass: 'message ' + (message.u_read ? 'no-unread' : 'unread') })
+				     .append($('<p/>', { text:message.text }))
+				     .append($('<button/>', { text:'Comment', click:comment( message ) }))
 				    );
 	}
+	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
     }
 
     root.empty();
@@ -293,6 +315,7 @@ function viewThread( thread )
 		.append($('<div/>', { id:'messages' })
 			.append($('<p/>', { text:'Fetching messages...' }))
 		       )
+		.append($('<p/>', { id:'index' }))
 		.append($('<button/>', { text:'Page up', click:function(){ messagesList.previous() }}))
 		.append($('<button/>', { text:'Page down', click:function(){ messagesList.next() }}))
 		.append($('<button/>', { text:'Previous unread', click:function(){ messagesList.previousSelected() }}))
@@ -303,9 +326,8 @@ function viewThread( thread )
 
     threadNode = liveDb.get( thread, { 'subject':1 }, threadCallback );
 
-    messagesList = liveDb.list( messagesCallback, thread, '->', null, { 'author':1, 'contents':1, 'time':1, 'u_read':1 },
-				5, null, 'u_read', [ { name:'time', dir:'asc' },
-						     { name:'author', dir:'asc', nocase:1 } ] );
+    messagesList = liveDb.list( messagesCallback, thread, '->', null, { 'text':1, 'u_read':1 },
+				5, null, 'u_read', [ { name:'text', dir:'asc' } ] );
 
     messagesContainer = $('#messages');
 }
@@ -314,11 +336,13 @@ function viewCreateMessage( thread, commentTo ) {
     var closeView = function( ) { };
 
     var create = function( ) {
-	var message = $('#contentsInput').val();
+	var message = $('#textInput').val();
 
-	newMessage( thread, commentTo, message, function ( res, error ) {
-	    viewThread( thread );
+	newMessage( thread, commentTo, message, function ( error ) {
+	    // TODO
 	});
+
+	viewThread( thread );
     };
 
     root.empty();
@@ -326,9 +350,9 @@ function viewCreateMessage( thread, commentTo ) {
 	.append(partialViewNavigation( closeView ))
         .append($('<div/>').attr('id', 'container')
 		.append($('<h2/>').text('New message'))
-		.append($('<label/>', { id:'contentsLabel', 'for':'contentsInput', text:'Contents' } ))
+		.append($('<label/>', { id:'textLabel', 'for':'textInput', text:'Message' } ))
 		.append($('<br/>'))
-		.append($('<textarea/>', { id:'contentsInput' } ))
+		.append($('<textarea/>', { id:'textInput' } ))
 		.append($('<br/>'))
 		.append($('<button/>', { text:'Create', click:function(){ closeView(); create() } } ))
                );
