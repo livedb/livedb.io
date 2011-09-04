@@ -21,6 +21,11 @@ p.selected
     background: #ccf;
 }
 
+.unread
+{
+    font-weight: bold;
+}
+
 .meeting:hover, .thread:hover, .message:hover
 {
     background: #eef;
