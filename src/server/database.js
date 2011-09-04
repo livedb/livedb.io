@@ -1543,6 +1543,7 @@ DatabaseManager.prototype =
 		callback( error );
 		return;
 	    }
+	    conn.close();
 	    last_tx = result[0][0].max;
 	    max_tx = 0;
 	    dir = fs.readdirSync( 'transactions/' );
@@ -1602,7 +1603,8 @@ DatabaseManager.prototype =
 					 callback();
 				     } );
 	    }
-	    conn.close();
+	    else
+		callback();
 	} );
         this._db = db;
     },
