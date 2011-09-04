@@ -14,3 +14,9 @@ p.selected
 {
     font-weight: bold;
 }
+
+.thread
+{
+    border: 1px solid bluegray;
+    background: #ccf;
+}

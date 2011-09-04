@@ -443,44 +443,38 @@ DatabaseManager.prototype =
     
     _fastGetList: function (nodeList, attributeSpec, user, properties, callback)
     {
-	if (nodeList.length == 0)
-	{
-	    callback( null, [] );
-	    return;
-	}
-
 	var self = this;
 
 	var resList = [];
 
 	var innerGet = function( index ) {
 
-	    var more = index < nodeList.length - 1;
+	    var end = index == nodeList.length;
 
-	    self.get( nodeList[ index ].id, attributeSpec, user, function (error, res) {
+	    if (end)
+	    {
+		callback( null, resList, properties );
+	    }
+	    else
+	    {
+		self.get( nodeList[ index ].id, attributeSpec, user, function (error, res) {
 
-		if (error)
-		{
-		    callback( error );
-		    return;
-		}
+		    if (error)
+		    {
+			callback( error );
+			return;
+		    }
 
-		if (nodeList[ index ].extraCondition !== undefined)
-		{
-		    res.extraCondition = nodeList[ index ].extraCondition;
-		}
+		    if (nodeList[ index ].extraCondition !== undefined)
+		    {
+			res.extraCondition = nodeList[ index ].extraCondition;
+		    }
 
-		resList.push( res );
-		
-		if( more )
-		{
+		    resList.push( res );
+
 		    innerGet( index + 1 );
-		}
-		else
-		{
-		    callback( null, resList, properties );
-		}
-	    });
+		});
+	    }
 	};
 
 	innerGet( 0 );

@@ -53,9 +53,9 @@ function onLoad( _liveDb, _rootId )
 
 function partialViewNavigation( closeView )
 {
-    return $('<ul></ul>').attr('id', 'nav')
-	.append($('<li/>', { text:'Users', click:function(){ closeView(); viewUsers(); }, addClass:'clickable' }))
-	.append($('<li></li>').text('Meetings').click(function(){ closeView(); viewMeetings(); }));
+    return $('<ul/>', { id:'nav', addClass:'navigation' })
+	.append($('<li/>', { text:'Users', click:function(){ closeView(); viewUsers(); }}))
+	.append($('<li/>', { text:'Meetings', click:function(){ closeView(); viewMeetings(); }}));
 }
 
 function viewUsers( )
@@ -70,12 +70,39 @@ function viewUsers( )
 
     var usersCallback = function ( list ) {
 	// Redundancy: list == usersList
-	var users = usersList.items();
-	usersDiv.empty();
+	var users = list.items();
+	var hasOnline = false;
+	var hasOffline = false;
+	var onlineList = $('<ul/>');
+	var offlineList = $('<ul/>');
 	for (var i=0; i < users.length; i++)
 	{
-            usersDiv.append($('<p/>', { text:users[i].name + ' ('+users[i]._online+')',
-					addClass:usersList.selectedId() == users[i].id ? 'selected' : 'no-selected' } ));
+	    var user = users[i];
+	    if (user._online)
+	    {
+		hasOnline = true;
+		onlineList.append($('<li/>', { text:user.name,
+					       addClass:list.selectedId() == user.id ? 'selected' : 'no-selected' } ));
+	    }
+	    else
+	    {
+		hasOffline = true;
+		offlineList.append($('<li/>', { text:user.name,
+						addClass:list.selectedId() == user.id ? 'selected' : 'no-selected' } ));
+	    }
+	}
+	usersDiv.empty();
+	if (hasOnline)
+	{
+	    usersDiv
+		.append($('<p/>', { text:'Online' }))
+		.append(onlineList);
+	}
+	if (hasOffline)
+	{
+	    usersDiv
+		.append($('<p/>', { text:'Offline' }))
+		.append(offlineList);
 	}
 	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
     };
@@ -120,7 +147,12 @@ function viewMeetings( )
 	    var view = function( meeting ) { return function () {
 		viewMeeting( meeting );
 	    }};
-            meetingsDiv.append($('<p/>', { text:meeting.subject, click:view( meeting ) }));
+	    meetingsDiv.append($('<div/>', { addClass:'meeting'
+					     + list.selectedId() == meeting.id ? ' selected' : ' no-selected',
+					     click:view( meeting ) })
+			       .append($('<p/>', { text:meeting.name }))
+			       .append($('<p/>', { text:meeting.description }))
+			      );
 	}
 	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
     };
@@ -139,8 +171,9 @@ function viewMeetings( )
 		.append($('<button/>', { text:'New meeting', click:function(){ closeView(); viewCreateMeeting() } } ))
                );
 
-    meetingsList = liveDb.list( meetingsCallback, '/meetings', '->', null, { 'subject':1 },
-				5, null, null, [ { name:'_online', dir:'desc' } ] );
+    meetingsList = liveDb.list( meetingsCallback, '/meetings', '->', null, { 'name':1, 'description':1 },
+				5, null, null, [ { name:'name', dir:'asc', nocase:1 },
+						 { name:'description', dir:'asc', nocase:1 } ] );
 
     meetingsDiv = $('#meetings');
 }
@@ -163,7 +196,7 @@ function viewCreateMeeting( )
     root.empty();
     root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>', { id:'container' })
+        .append($('<div/>', { id:'container', addClass:'inputForm' })
 		.append($('<h2/>', { text:'New meeting' }))
 		.append($('<label/>', { id:'nameLabel', 'for':'nameInput', text:'Name' } ))
 		.append($('<br/>'))
@@ -206,7 +239,8 @@ function viewMeeting( meeting )
 	    var view = function( thread ) { return function() {
 		viewThread( thread );
 	    }};
-	    threadsDiv.append($('<div/>', { click:view( thread ), addClass:'thread' })
+	    threadsDiv.append($('<div/>', { click:view( thread ),
+					    addClass:'thread ' + list.selectedId() == thread.id ? 'selected' : 'no-selected' })
 			      .append($('<p/>', { text:thread.subject, addClass:'subject' } ))
 			      .append($('<p/>', { text:thread.description, addClass:'description' } ))
 			     );
@@ -215,13 +249,13 @@ function viewMeeting( meeting )
     }
 
     root.empty();
-    root.append($('<h1/>').text('Forum'))
+    root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>').attr('id', 'container')
+        .append($('<div/>', { id:'container' })
 		.append($('<h2/>', { text:'Meeting', id:'meetingHeading' }))
 		.append($('<p/>', { id:'meetingDescription' }))
-		.append($('<ul/>').attr('id', 'threads')
-			.append($('<li></li>').text('Fetching threads...'))
+		.append($('<ul/>', { id:'threads' })
+			.append($('<li/>', { text:'Fetching threads...' }))
 		       )
 		.append($('<p/>', { id:'index' }))
 		.append($('<button/>', { text:'Page up', click:function(){ threadsList.previous() }}))
@@ -238,7 +272,8 @@ function viewMeeting( meeting )
     threadsDiv = $('#threads');
 }
 
-function viewCreateThread( meeting ) {
+function viewCreateThread( meeting )
+{
     var closeView = function( ) { };
 
     var create = function( ) {
@@ -253,9 +288,9 @@ function viewCreateThread( meeting ) {
     };
 
     root.empty();
-    root.append($('<h1/>').text('Forum'))
+    root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>').attr('id', 'container')
+        .append($('<div/>', { id:'container', addClass:'inputForm' })
 		.append($('<h2/>').text('New thread'))
 		.append($('<label/>', { id:'subjectLabel', 'for':'subjectInput', text:'Subject' } ))
 		.append($('<br/>'))
@@ -298,7 +333,9 @@ function viewThread( thread )
 	    var comment = function( message ) { return function () {
 		viewCreateMessage( threadNode.item(), message );
 	    }};
-            messagesContainer.append($('<div/>', { addClass: 'message ' + (message.u_read ? 'no-unread' : 'unread') })
+            messagesContainer.append($('<div/>', { addClass: 'message'
+						   + (message.u_read ? ' no-unread' : ' unread')
+						   + (list.selectedId() == message.id ? ' selected' : ' no-selected') })
 				     .append($('<p/>', { text:message.text }))
 				     .append($('<button/>', { text:'Comment', click:comment( message ) }))
 				    );
@@ -309,7 +346,7 @@ function viewThread( thread )
     root.empty();
     root.append($('<h1/>').text('Forum'))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>').attr('id', 'container')
+        .append($('<div/>', { id:'container', addClass:'thread' })
 		.append($('<h2/>', { text:'Thread', id:'threadHeading' }))
 		.append($('<h3/>', { id:'threadSubject' }))
 		.append($('<div/>', { id:'messages' })
@@ -332,7 +369,8 @@ function viewThread( thread )
     messagesContainer = $('#messages');
 }
 
-function viewCreateMessage( thread, commentTo ) {
+function viewCreateMessage( thread, commentTo )
+{
     var closeView = function( ) { };
 
     var create = function( ) {
@@ -348,7 +386,7 @@ function viewCreateMessage( thread, commentTo ) {
     root.empty();
     root.append($('<h1/>').text('Forum'))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>').attr('id', 'container')
+        .append($('<div/>', { id:'container', addClass:'inputForm' })
 		.append($('<h2/>').text('New message'))
 		.append($('<label/>', { id:'textLabel', 'for':'textInput', text:'Message' } ))
 		.append($('<br/>'))
