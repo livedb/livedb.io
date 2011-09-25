@@ -4,27 +4,6 @@ body
     padding: 0;
 }
 
-.menu
-{
-    padding: 0;
-    display: block;
-    list-style-type: none;
-}
-
-.menu li
-{
-    background: #ccf;
-    display: inline-block;
-    padding: 0.2em 0.4em 0.2em 0.4em;
-    margin-left: 0.3em;
-    cursor: default;
-}
-
-.menu li:hover
-{
-    background: #eef;
-}
-
 h1, h2, h3, h4, h5, h6
 {
     font-family: sans-serif;
@@ -55,6 +34,79 @@ p.selected
 }
 
 .meeting:hover, .thread:hover, .message:hover
+{
+    background: #eef;
+}
+
+
+.list
+{
+}
+
+.list .header
+{
+    overflow: overlay;
+    clear: left;
+}
+
+.list .header .column
+{
+    display: inline-block;
+    float: left;
+}
+
+.list .contents .item
+{
+    overflow: overlay;
+    clear: left;
+
+    padding: 0 0 0 0.5em;
+    border: 1px solid #bbf;
+    background: #ccf;
+    cursor: default;
+}
+
+.list .contents .item:hover
+{
+    background: #eef;
+}
+
+.list .contents .item .detail
+{
+    display: inline-block;
+    float: left;
+}
+
+.list .header, .list .contents, .list .footer
+{
+    clear: left;
+}
+
+.menu
+{
+    padding: 0;
+    display: block;
+    list-style-type: none;
+}
+
+.menu li
+{
+    display: block;
+    clear: none;
+
+    background: #ccf;
+    padding: 0.2em 0.4em 0.2em 0.4em;
+    margin-left: 0.3em;
+    cursor: default;
+}
+
+.menu li.horizontal
+{
+    display: inline-block;
+    clear: left;
+}
+
+.menu li:hover
 {
     background: #eef;
 }

@@ -53,9 +53,14 @@ function onLoad( _liveDb, _rootId )
 
 function partialViewNavigation( closeView )
 {
-    return $('<ul/>', { id:'nav', 'class':'menu' })
-	.append($('<li/>', { text:'Users', click:function(){ closeView(); viewUsers(); }}))
-	.append($('<li/>', { text:'Meetings', click:function(){ closeView(); viewMeetings(); }}));
+    // return $('<ul/>', { id:'nav', 'class':'menu' })
+    // 	.append($('<li/>', { text:'Users', click:function(){ closeView(); viewUsers(); }}))
+    // 	.append($('<li/>', { text:'Meetings', click:function(){ closeView(); viewMeetings(); }}));
+
+    return createMenu( 'menu', [
+	{ caption:'Users', click:function(){ closeView(); viewUsers(); }},
+	{ caption:'Meetings', click:function(){ closeView(); viewMeetings(); }}
+    ], false );
 }
 
 function viewUsers( )
@@ -111,7 +116,7 @@ function viewUsers( )
     root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
         .append($('<div/>', { id:'container' })
-		.append($('<h2/>', { text:'Users' }))
+		.append($('<h2/>', { text:'Users', style:'clear:left' }))
 		.append($('<div/>', { id:'users' })
 			.append($('<p/>', { text:'Fetching users...' }))
 		       )
@@ -138,42 +143,50 @@ function viewMeetings( )
     };
 
     var meetingsCallback = function( list ) {
-	// Redundancy: list == meetingsList
 	var meetings = list.items();
-	meetingsDiv.empty();
-	for (var i=0; i < meetings.length; i++)
-	{
-	    var meeting = meetings[i];
-	    var view = function( m ) { return function () {
-		viewMeeting( m );
-	    }};
-	    meetingsDiv.append($('<div/>', { 'class':'meeting'
-					     + (list.selectedId() == meeting.id ? ' selected' : ' no-selected'),
-					     click:view( meeting ) })
-			       .append($('<p/>', { text:meeting.name }))
-			       .append($('<p/>', { text:meeting.description }))
-			      );
-	}
-	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
+	updateList( 'meetings', meetings );
+	// // Redundancy: list == meetingsList
+	// var meetings = list.items();
+	// meetingsDiv.empty();
+	// for (var i=0; i < meetings.length; i++)
+	// {
+	//     var meeting = meetings[i];
+	//     var view = function( m ) { return function () {
+	// 	viewMeeting( m );
+	//     }};
+	//     meetingsDiv.append($('<div/>', { 'class':'meeting'
+	// 				     + (list.selectedId() == meeting.id ? ' selected' : ' no-selected'),
+	// 				     click:view( meeting ) })
+	// 		       .append($('<p/>', { text:meeting.name }))
+	// 		       .append($('<p/>', { text:meeting.description }))
+	// 		      );
+	// }
+	// $('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
     };
+
+    meetingsList = liveDb.list( meetingsCallback, '/meetings', '->', null, { 'name':1, 'description':1 },
+				5, null, null, [ { name:'name', dir:'asc', nocase:1 },
+						 { name:'description', dir:'asc', nocase:1 } ] );
+
+
+    var $list = createList( 'meetings', meetingsList,
+			    [ { name:'name', caption:'Name', width:'15em' },
+			      { name:'description', caption:'Description' } ],
+			    function( id ) { closeView(); viewMeeting( id ); } );
 
     root.empty();
     root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
         .append($('<div/>', { id:'container' })
-		.append($('<h2/>', { text:'Meetings' }))
-		.append($('<div/>', { id:'meetings' })
-			.append($('<p/>', { text:'Fetching meetings...' }))
-		       )
-		.append($('<p/>', { id:'index' }))
-		.append($('<button/>', { text:'Page up', click:function(){ meetingsList.previous() }}))
-		.append($('<button/>', { text:'Page down', click:function(){ meetingsList.next() }}))
-		.append($('<button/>', { text:'New meeting', click:function(){ closeView(); viewCreateMeeting() } } ))
+		// .append($('<div/>', { id:'meetings' })
+		// 	.append($('<p/>', { text:'Fetching meetings...' }))
+		//        )
+		.append( $list )
+		// .append($('<p/>', { id:'index' }))
+		// .append($('<button/>', { text:'Page up', click:function(){ meetingsList.previous() }}))
+		// .append($('<button/>', { text:'Page down', click:function(){ meetingsList.next() }}))
+		// .append($('<button/>', { text:'New meeting', click:function(){ closeView(); viewCreateMeeting() } } ))
                );
-
-    meetingsList = liveDb.list( meetingsCallback, '/meetings', '->', null, { 'name':1, 'description':1 },
-				5, null, null, [ { name:'name', dir:'asc', nocase:1 },
-						 { name:'description', dir:'asc', nocase:1 } ] );
 
     meetingsDiv = $('#meetings');
 }
@@ -272,6 +285,7 @@ function viewMeeting( meeting )
 
     threadsDiv = $('#threads');
 }
+
 
 function viewCreateThread( meeting )
 {
@@ -427,3 +441,87 @@ function newMessage( thread, commentTo, message, callback )
     }
     trans.go( callback );
 }
+
+function createList( id, list, columns, click )
+{
+    var $container = $('<div/>', { id: id, 'class': 'list' } );
+
+    var $header = $('<div/>', { 'class':'header' });
+    var $contents = $('<div/>', { id: id+'_contents', 'class':'contents' });
+    var $footer = $('<div/>', { 'class':'footer' });
+
+    $container.data( 'columns', columns );
+    $container.data( 'click', click );
+
+    for (var i = 0; i < columns.length; i++)
+    {
+	var column = columns[i];
+	var style = (column.width ? 'width:'+column.width+';' : '');
+	$header.append($('<span/>', { text: column.caption, style: style, 'class': 'column' }));
+    }
+
+    $footer
+	.append($('<button/>', { text:'Page up', click:function(){ list.previous() }}))
+	.append($('<button/>', { text:'Page down', click:function(){ list.next() }}))
+
+    $container
+	.append($header)
+	.append($contents)
+	.append($footer);
+
+    return $container;
+}
+
+function updateList( id, items )
+{
+    var $container = $('#'+id);
+    var $contents = $('#'+id+'_contents');
+
+    var columns = $container.data( 'columns' );
+    var click = $container.data( 'click' );
+
+    $contents.empty();
+
+    for (var i = 0; i < items.length; i++)
+    {
+	var item = items[i];
+
+	var itemClick = function( id ){ return function( e ) {
+	    click( id );
+	} };
+
+	var $row = $('<div/>', { 'class': 'item', click: itemClick( item.id ) });
+
+	for (var j = 0; j < columns.length; j++)
+	{
+	    var column = columns[j];
+
+	    var style = (column.width ? 'width:'+column.width+';' : '');
+
+	    $row.append($('<span/>', { text: item[ column.name ], style: style, 'class':'detail' }));
+	}
+
+	$contents.append( $row );
+    }
+}
+
+function createMenu( id, items, mobile )
+{
+    var $container = $('<ul/>', { id: id, 'class': 'menu' } );
+
+    for (var i = 0; i < items.length; i++)
+    {
+	var item = items[i];
+
+	var itemClass = mobile ? '' : 'horizontal';
+
+	$container.append(
+	    $('<li/>', { 'class': itemClass, click:item.click }).append(
+		$('<a/>', { text: item.caption })
+	    )
+	);
+    }
+
+    return $container;
+}
+
