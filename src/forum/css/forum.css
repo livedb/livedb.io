@@ -1,13 +1,34 @@
 body
 {
-	margin: 0;
-	padding: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.menu
+{
+    padding: 0;
+    display: block;
+    list-style-type: none;
+}
+
+.menu li
+{
+    background: #ccf;
+    display: inline-block;
+    padding: 0.2em 0.4em 0.2em 0.4em;
+    margin-left: 0.3em;
+    cursor: default;
+}
+
+.menu li:hover
+{
+    background: #eef;
 }
 
 h1, h2, h3, h4, h5, h6
 {
-	font-family: sans-serif;
-	font-weight: bold;
+    font-family: sans-serif;
+    font-weight: bold;
 }
 
 p.selected
@@ -15,10 +36,17 @@ p.selected
     font-weight: bold;
 }
 
+#meetings, #threads, #messages
+{
+    padding: 0;
+}
+
 .meeting, .thread, .message
 {
+    padding: 0 0 0 0.5em;
     border: 1px solid #bbf;
     background: #ccf;
+    cursor: default;
 }
 
 .unread

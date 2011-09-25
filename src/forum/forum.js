@@ -53,7 +53,7 @@ function onLoad( _liveDb, _rootId )
 
 function partialViewNavigation( closeView )
 {
-    return $('<ul/>', { id:'nav', addClass:'navigation' })
+    return $('<ul/>', { id:'nav', 'class':'menu' })
 	.append($('<li/>', { text:'Users', click:function(){ closeView(); viewUsers(); }}))
 	.append($('<li/>', { text:'Meetings', click:function(){ closeView(); viewMeetings(); }}));
 }
@@ -240,10 +240,10 @@ function viewMeeting( meeting )
 	    var view = function( thread ) { return function() {
 		viewThread( thread );
 	    }};
+	    var cssClass = 'thread ' + (list.selectedId() == thread.id ? 'selected' : 'no-selected');
 	    threadsDiv.append($('<div/>', { click:view( thread ),
-					    'class':'thread ' + list.selectedId() == thread.id ? 'selected' : 'no-selected' })
+					    'class':cssClass } )
 			      .append($('<p/>', { text:thread.subject, 'class':'subject' } ))
-			      // .append($('<p/>', { text:thread.description, 'class':'description' } ))
 			     );
 	}
 	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
@@ -347,7 +347,7 @@ function viewThread( thread )
     root.empty();
     root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
-        .append($('<div/>', { id:'container', 'class':'thread' })
+        .append($('<div/>', { id:'container' })
 		.append($('<h2/>', { text:'Thread', id:'threadHeading' }))
 		.append($('<h3/>', { id:'threadSubject' }))
 		.append($('<div/>', { id:'messages' })
