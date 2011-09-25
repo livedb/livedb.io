@@ -2140,11 +2140,11 @@ DatabaseManager.prototype =
 	    else if (step.method == 'addRelationship')
 	    {
 		if (isFinite( step.from ))
-		    from = nodes[ step.from ];
+		    from = newNodes[ step.from ];
 		else
 		    from = step.from.id;
 		if (isFinite( step.to ))
-		    to = nodes[ step.to ];
+		    to = newNodes[ step.to ];
 		else
 		    to = step.to.id;
 		if (!updatedNodes[ from ])
