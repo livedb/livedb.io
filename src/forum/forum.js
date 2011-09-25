@@ -144,8 +144,8 @@ function viewMeetings( )
 	for (var i=0; i < meetings.length; i++)
 	{
 	    var meeting = meetings[i];
-	    var view = function( meeting ) { return function () {
-		viewMeeting( meeting );
+	    var view = function( m ) { return function () {
+		viewMeeting( m );
 	    }};
 	    meetingsDiv.append($('<div/>', { 'class':'meeting'
 					     + (list.selectedId() == meeting.id ? ' selected' : ' no-selected'),
@@ -226,6 +226,7 @@ function viewMeeting( meeting )
     var meetingCallback = function( node ) {
 	// Redundancy: node == meetingNode;
 	var item = node.item();
+	$('#meetingHeading').text("Meeting " + item.name);
 	$('#meetingDescription').text(item.description);
     }
 
@@ -242,7 +243,7 @@ function viewMeeting( meeting )
 	    threadsDiv.append($('<div/>', { click:view( thread ),
 					    'class':'thread ' + list.selectedId() == thread.id ? 'selected' : 'no-selected' })
 			      .append($('<p/>', { text:thread.subject, 'class':'subject' } ))
-			      .append($('<p/>', { text:thread.description, 'class':'description' } ))
+			      // .append($('<p/>', { text:thread.description, 'class':'description' } ))
 			     );
 	}
 	$('#index').text((list.offset() + 1) + '-' + (list.offset() + list.items().length) + ' of ' + list.size());
@@ -264,7 +265,7 @@ function viewMeeting( meeting )
 					 click:function(){ closeView(); viewCreateThread( meetingNode.item() ) } } ))
                );
 
-    meetingNode = liveDb.get( meeting, { 'subject':1 }, meetingCallback );
+    meetingNode = liveDb.get( meeting, { 'name':1, 'description':1 }, meetingCallback );
 
     threadsList = liveDb.list( threadsCallback, meeting, '->', null, { 'subject':1 },
 			       5, null, null, [ { name:'subject', dir:'asc', nocase:1 } ] );
@@ -330,8 +331,8 @@ function viewThread( thread )
 	for (var i=0; i < messages.length; i++)
 	{
 	    var message = messages[i];
-	    var comment = function( message ) { return function () {
-		viewCreateMessage( threadNode.item(), message );
+	    var comment = function( m ) { return function () {
+		viewCreateMessage( threadNode.item(), m );
 	    }};
             messagesContainer.append($('<div/>', { 'class':'message'
 						   + (message.u_read ? ' no-unread' : ' unread')
@@ -363,8 +364,8 @@ function viewThread( thread )
 
     threadNode = liveDb.get( thread, { 'subject':1 }, threadCallback );
 
-    messagesList = liveDb.list( messagesCallback, thread, '->', null, { 'text':1, 'u_read':1 },
-				5, null, 'u_read', [ { name:'text', dir:'asc' } ] );
+    messagesList = liveDb.list( messagesCallback, thread, '->', null, { 'text':1, 'name':1, 'u_read':1 },
+				5, null, 'u_read', [ { name:'text', dir:'asc' }, { name:'name', dir:'asc' } ] );
 
     messagesContainer = $('#messages');
 }
@@ -409,7 +410,7 @@ function newThread( meeting, subject, firstMessage, callback )
     var trans = liveDb.transaction();
     var thread;
 
-    thread = trans.create( meeting, { 'name': subject } );
+    thread = trans.create( meeting, { 'subject': subject } );
     trans.create( thread, { 'text': firstMessage } );
     trans.go( callback );
 }

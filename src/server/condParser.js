@@ -434,7 +434,7 @@ function formatSqlJoinsFragment (attributes, nodeName, user)
 	}
 	else if (!startsWith( attribute, '_' ))
 	{
-	    sql += "JOIN attribute [a_" + attribute + "]"
+	    sql += "LEFT OUTER JOIN attribute [a_" + attribute + "]"
 		+ " ON [a_" + attribute + "].node_id=" + nodeName + ".id"
 		+ " AND [a_" + attribute + "].name='" + attribute + "'"
 		+ " AND [a_" + attribute + "].active=1 ";
@@ -462,7 +462,7 @@ function formatSqlJoins (attributes, nodeName, user)
 	}
 	else if (!startsWith( attribute, '_' ))
 	{
-	    sql += "JOIN attribute [a_" + attribute + "]"
+	    sql += "LEFT OUTER JOIN attribute [a_" + attribute + "]"
 		+ " ON [a_" + attribute + "].node_id=" + nodeName + ".id"
 		+ " AND [a_" + attribute + "].name='" + attribute + "'"
 		+ " AND [a_" + attribute + "].active=1 ";
