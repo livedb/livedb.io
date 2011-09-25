@@ -908,7 +908,7 @@ DatabaseManager.prototype =
 	    list.selectQuery.bind( 'windowStart', list.cacheBegin );
 	    list.selectQuery.bind( 'windowSize', list.cacheEnd - list.cacheBegin );
 
-	    console.log( list.selectQuery.sql, list.selectQuery.parameters );
+	    //console.log( list.selectQuery.sql, list.selectQuery.parameters );
 
 	    conn.query( list.selectQuery.sql, list.selectQuery.parameters );
 
