@@ -291,7 +291,7 @@ function viewCreateThread( meeting )
     root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
         .append($('<div/>', { id:'container', 'class':'inputForm' })
-		.append($('<h2/>').text('New thread'))
+		.append($('<h2/>', { text:'New thread' }))
 		.append($('<label/>', { id:'subjectLabel', 'for':'subjectInput', text:'Subject' } ))
 		.append($('<br/>'))
 		.append($('<input/>', { id:'subjectInput' } ))
@@ -333,7 +333,7 @@ function viewThread( thread )
 	    var comment = function( message ) { return function () {
 		viewCreateMessage( threadNode.item(), message );
 	    }};
-            messagesContainer.append($('<div/>', { 'class': 'message'
+            messagesContainer.append($('<div/>', { 'class':'message'
 						   + (message.u_read ? ' no-unread' : ' unread')
 						   + (list.selectedId() == message.id ? ' selected' : ' no-selected') })
 				     .append($('<p/>', { text:message.text }))
@@ -344,7 +344,7 @@ function viewThread( thread )
     }
 
     root.empty();
-    root.append($('<h1/>').text('Forum'))
+    root.append($('<h1/>', { text:'Forum' }))
 	.append(partialViewNavigation( closeView ))
         .append($('<div/>', { id:'container', 'class':'thread' })
 		.append($('<h2/>', { text:'Thread', id:'threadHeading' }))
@@ -384,10 +384,10 @@ function viewCreateMessage( thread, commentTo )
     };
 
     root.empty();
-    root.append($('<h1/>').text('Forum'))
+    root.append($('<h1/>', { text:'Forum' } ))
 	.append(partialViewNavigation( closeView ))
         .append($('<div/>', { id:'container', 'class':'inputForm' })
-		.append($('<h2/>').text('New message'))
+		.append($('<h2/>', { text:'New message' } ))
 		.append($('<label/>', { id:'textLabel', 'for':'textInput', text:'Message' } ))
 		.append($('<br/>'))
 		.append($('<textarea/>', { id:'textInput' } ))
