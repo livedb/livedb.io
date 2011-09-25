@@ -137,6 +137,8 @@ DatabaseManager.prototype =
 
 	    var inner = function (error, list)
 	    {
+		// console.log("LIST PARENT ID " + list.parentId);
+		// console.log(list);
 		if (error)
 		{
 		    console.log( error );
@@ -905,6 +907,8 @@ DatabaseManager.prototype =
 	    list.selectQuery.bind( 'parent', list.parentId );
 	    list.selectQuery.bind( 'windowStart', list.cacheBegin );
 	    list.selectQuery.bind( 'windowSize', list.cacheEnd - list.cacheBegin );
+
+	    console.log( list.selectQuery.sql, list.selectQuery.parameters );
 
 	    conn.query( list.selectQuery.sql, list.selectQuery.parameters );
 
