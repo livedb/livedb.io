@@ -2046,7 +2046,6 @@ DatabaseManager.prototype =
 			parent = step.parent;
 		    else
 			parent = newNodes[ step.parent ];
-		    console.log( parent );
 		}
 		else
 		    parent = step.parent.id;
@@ -2092,14 +2091,15 @@ DatabaseManager.prototype =
 		    conn.go( innerFindNodeId );
 		};
 		conn.go( findNodeId );
+		return;
 	    }
 	    else if (step.method == 'update')
 	    {
 		if (!updatedNodes[ step.node.id ])
 		{
 		    conn.insert( "INSERT INTO node "
-				 + "(id, revision, active, parent, pathelem) "
-				 + "SELECT id, ?, 1, parent, pathelem "
+				 + "(id, revision, active, deleted, parent, pathelem) "
+				 + "SELECT id, ?, 1, 0, parent, pathelem "
 				 + "FROM node "
 				 + "WHERE id=? AND active=1 ",
 				 [ revision, step.node.id ] );
@@ -2150,8 +2150,8 @@ DatabaseManager.prototype =
 		if (!updatedNodes[ from ])
 		{
 		    conn.insert( "INSERT INTO node "
-				 + "(id, revision, active, parent, pathelem) "
-				 + "SELECT id, ?, 1, parent, pathelem "
+				 + "(id, revision, active, deleted, parent, pathelem) "
+				 + "SELECT id, ?, 1, 0, parent, pathelem "
 				 + "FROM node "
 				 + "WHERE id=? AND active=1 ",
 				 [ revision, from ] );
@@ -2164,8 +2164,8 @@ DatabaseManager.prototype =
 		if (!updatedNodes[ to ])
 		{
 		    conn.insert( "INSERT INTO node "
-				 + "(id, revision, active, parent, pathelem) "
-				 + "SELECT id, ?, 1, parent, pathelem "
+				 + "(id, revision, active, deleted, parent, pathelem) "
+				 + "SELECT id, ?, 1, 0, parent, pathelem "
 				 + "FROM node "
 				 + "WHERE id=? AND active=1 ",
 				 [ revision, to ] );
@@ -2187,8 +2187,8 @@ DatabaseManager.prototype =
 		if (!updatedNodes[ from ])
 		{
 		    conn.insert( "INSERT INTO node "
-				 + "(id, revision, active, parent, pathelem) "
-				 + "SELECT id, ?, 1, parent, pathelem "
+				 + "(id, revision, active, deleted, parent, pathelem) "
+				 + "SELECT id, ?, 1, 0, parent, pathelem "
 				 + "FROM node "
 				 + "WHERE id=? AND active=1 ",
 				 [ revision, from ] );
@@ -2201,8 +2201,8 @@ DatabaseManager.prototype =
 		if (!updatedNodes[ to ])
 		{
 		    conn.insert( "INSERT INTO node "
-				 + "(id, revision, active, parent, pathelem) "
-				 + "SELECT id, ?, 1, parent, pathelem "
+				 + "(id, revision, active, deleted, parent, pathelem) "
+				 + "SELECT id, ?, 1, 0, parent, pathelem "
 				 + "FROM node "
 				 + "WHERE id=? AND active=1 ",
 				 [ revision, to ] );
@@ -2217,6 +2217,7 @@ DatabaseManager.prototype =
 			     + "WHERE from_id=? AND to_id=? AND active=1 AND name=? ",
 			     [ revision, from, to, step.name ] );
 	    }
+	    storeTransaction();
 	};
 
 	checkPaths();
