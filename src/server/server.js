@@ -59,6 +59,24 @@ for (var i=0; i < config.dependencies.length; i++)
 
 dbFile = appName;
 
+function readDirSyncRecursive( path, subpath )
+{
+    var res = [];
+    var content = fs.readdirSync( path + "/" + subpath );
+
+    console.log( content );
+    for (var i=0; i < content.length; i++)
+    {
+	var stat = fs.statSync( path + "/" + subpath + content[i] );
+
+	if (stat.isFile())
+	    res.push( subpath + content[i] );
+	else if (stat.isDirectory())
+	    res = res.concat( readDirSyncRecursive( path + "/" + subpath, content[i] + "/" ) );
+    }
+    return res;
+}
+
 var server = http.createServer(function (req, res) {
     var uriPath = url.parse(req.url).pathname;
 
@@ -77,8 +95,9 @@ var server = http.createServer(function (req, res) {
 	if (uriPath == '')
 	{
 	    var html="";
-	    var files = fs.readdirSync( "../forum/" );
+	    var files = readDirSyncRecursive( serverRoot + "/../forum/", "" );
 
+	    console.log( files );
 	    html += '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n';
 	    html += '<html xmlns="http://www.w3.org/1999/xhtml">\n';
 	    html += '  <head>\n';

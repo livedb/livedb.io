@@ -5,6 +5,8 @@ var usersDiv;
 var meetingsDiv;
 var messagesDiv;
 
+var views = [];
+
 function onLoad( _liveDb, _rootId )
 {
     liveDb = _liveDb;
@@ -185,7 +187,7 @@ function viewMeetings( )
 		// .append($('<p/>', { id:'index' }))
 		// .append($('<button/>', { text:'Page up', click:function(){ meetingsList.previous() }}))
 		// .append($('<button/>', { text:'Page down', click:function(){ meetingsList.next() }}))
-		// .append($('<button/>', { text:'New meeting', click:function(){ closeView(); viewCreateMeeting() } } ))
+		.append($('<button/>', { text:'New meeting', click:function(){ closeView(); viewCreateMeeting() } } ))
                );
 
     meetingsDiv = $('#meetings');
